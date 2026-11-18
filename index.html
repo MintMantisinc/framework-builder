@@ -210,13 +210,13 @@ details.ex .exb{padding:0 18px 16px;font-size:15.5px}
   .rail{display:none;position:fixed;left:0;top:0;width:min(320px,90vw);z-index:30}
   .rail.open{display:block}
   .mbtn{display:inline-block}
-  .scrim.open{display:block;position:fixed;inset:0;background:rgba(14,31,25,.5);z-index:20}
+  .scrim.open{display:block;position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(14,31,25,.5);z-index:20}
   .top{padding:10px 16px}.top .tb{flex-basis:70px}
   .screen{padding:26px 18px 0}.screen h1{font-size:28px}
   .grid2,.pair,.fw,.shapes{grid-template-columns:1fr}
   .exgrid{grid-template-columns:1fr;gap:2px 0}.exgrid>.lbl{padding-top:10px}
 }
-@media (max-width:1240px){ .scrim.open{display:block;position:fixed;inset:0;background:rgba(14,31,25,.5);z-index:20} }
+@media (max-width:1240px){ .scrim.open{display:block;position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(14,31,25,.5);z-index:20} }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media print{.rail,.side,.top,.nav{display:none!important}.app{display:block}}
@@ -227,7 +227,7 @@ details.ex .exb{padding:0 18px 16px;font-size:15.5px}
   <aside class="rail" id="rail" aria-label="Your progress"></aside>
   <main class="main">
     <div class="top"><button type="button" class="mbtn" data-act="openrail">Map</button><div class="where" id="where"></div><div class="tb"><i id="tbar"></i></div><span class="tp" id="tpct"></span><button type="button" class="mbtn fwbtn" data-act="openside">My framework</button></div>
-    <div class="screen" id="screen"></div>
+    <div class="screen" id="screen"><h1>Build your framework</h1><p class="lead">Loading.</p><p>If this message stays for more than a few seconds, this browser is blocking the page or is too old to run it. Try an up-to-date Chrome, Safari, Edge or Firefox, or open the link on another device. Nothing is lost.</p><noscript><p><b>JavaScript is turned off in this browser.</b> Turn it on, or open the link in another browser.</p></noscript></div>
   </main>
   <aside class="side" id="side" aria-label="Your framework so far"></aside>
 </div>
@@ -237,7 +237,7 @@ details.ex .exb{padding:0 18px 16px;font-size:15.5px}
 <script>"use strict";
 /* Build Your Framework · online builder for Chris. Quotes are injected from the verified list. */
 const Q = {"asking_easier":{"text":"The asking was easier than I had spent thirty years assuming it would be.","page":71,"source":"manuscript"},"booth_kid":{"text":"I am describing what it was like to be the kid in the booth.","page":9,"source":"manuscript"},"booth_wait":{"text":"There was nothing to do but wait, because there was nowhere to go and no one to tell.","page":9,"source":"manuscript"},"borrow_shape":{"text":"I am borrowing the shape of an idea from quantum mechanics, not claiming you are literally a quantum system.","page":15,"source":"manuscript"},"call_truth":{"text":"I remember saying some version of the truth out loud to a stranger for the first time in twenty-three years.","page":14,"source":"manuscript"},"circumstance":{"text":"the problem was circumstance and not chemistry, a different job, a different city, a different year, and the drinking would sort itself out.","page":16,"source":"manuscript"},"daily_return_title":{"text":"The Daily Return","page":106,"source":"manuscript"},"disclosure_unsafe":{"text":"Honest disclosure feels viscerally unsafe, even when the actual environment poses no threat.","page":66,"source":"manuscript"},"entry_moment":{"text":"This is affecting my life, but I am not sure it is serious enough to ask for help.","source":"Positioning brief, section 03"},"every_addiction":{"text":"Every addiction I have ever seen, in whatever form it takes, is doing the same job.","page":10,"source":"manuscript"},"ex_call_ease":{"text":"And instead of the collapse I expected, the shame spiral, the reaching, the familiar descent, there was ease.","page":18,"source":"manuscript"},"guide_connect_q":{"text":"Who could I tell one true thing to?","source":"Framework guide, Connect"},"guide_unsure":{"text":"I am not sure how serious this is, but I would like to talk it through.","source":"Framework guide, Connect openings"},"metaphor_mechanism":{"text":"I am not going to dress up a metaphor as a mechanism.","page":5,"source":"manuscript"},"most_people":{"text":"Most people, it turns out, do want to know. They ask.","page":10,"source":"manuscript"},"need_help":{"text":"I have drifted very far from myself, and I need help to find a way back.","page":14,"source":"manuscript"},"okay_no_argue":{"text":"He did not argue with my resistance, reassure me, or make any promises.","page":33,"source":"manuscript"},"okay_not_debate":{"text":"Not a debate. Not a reassurance. Just okay.","page":24,"source":"manuscript"},"opening_sentence":{"text":"Something isn't working for me. Can we talk about it?","source":"Speaker sheet, section 05"},"physics":{"text":"This is not a metaphor for God. This is physics.","page":15,"source":"manuscript"},"preface_willing":{"text":"Not belief. Not a label. Not a story like mine. Just willingness.","page":3,"source":"manuscript"},"receiver_broken":{"text":"It is because the receiver is broken.","page":10,"source":"manuscript"},"receiver_delivery":{"text":"The attunement gets offered, and you cannot take delivery of it.","page":10,"source":"manuscript"},"sheet_sequence":{"text":"Tension · Recognition · The call · Hope and book · Invitation","source":"Speaker sheet, memory sequence"},"success_line":{"text":"I understand what is troubling me. I do not have to handle it alone. I know who I could talk to and how I could begin.","source":"Positioning brief, section 08"},"they_answered":{"text":"They answered. That is the whole miracle of that day.","page":14,"source":"manuscript"},"told_myself":{"text":"I told myself it was something else. Every time.","page":13,"source":"manuscript"}};
-const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const esc = (s) => String(s === null || s === undefined ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const qt = (id, tag, lead) => { const e = Q[id]; return `<span class="qt">"${lead ? "... " : ""}${esc(e.text)}"</span> <span class="pg">${e.page ? "p. " + e.page : esc(tag || e.source)}</span>`; };
 
 /* ---------------- state ---------------- */
@@ -474,7 +474,7 @@ function screens() {
   add("b_way", "before", "Waypoint", () => {
     const f = filledSent();
     return waypoint("before", "You can hear the sentences now.", "These are the walls your framework has to get past. Next you turn three of your ideas into something teachable.",
-      [[String(f.length), "sentences"], [String(new Set(f.flatMap((r) => r.barriers || [])).size), "barriers named"], [String(f.filter((r) => r.young).length), "a young adult would say"]],
+      [[String(f.length), "sentences"], [String(new Set(f.reduce((all, r) => all.concat(r.barriers || []), [])).size), "barriers named"], [String(f.filter((r) => r.young).length), "a young adult would say"]],
       [[f.length >= 3, f.length >= 6 ? "You have six or more sentences." : `You have at least three sentences. You have ${f.length}; six is better.`, "b_list"],
        [f.length > 0 && f.every((r) => (r.barriers || []).length), "Each sentence has a barrier.", "b_list"],
        [f.filter((r) => r.young).length >= 2, "At least two are sentences a young adult would say.", "b_list"],
