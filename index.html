@@ -1,0 +1,893 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Build Your Framework</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Syne:wght@400;500;700&display=swap" rel="stylesheet">
+<style>:root{
+  --dark:#0e1f19; --surface:#17332a; --subtle:#224c3f; --mint:#daebe5; --second:#a1ccbf; --deco:#c1ddd4;
+  --muted:#7a9e8e; --accent:#2abf91; --deep:#2d6655; --paper:#f3f8f6; --ink:#0e1f19; --body:#23423a; --rule:#c9dfd7; --tint:#e6f1ec;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:"Inter",system-ui,sans-serif;font-size:16.5px;line-height:1.55;color:var(--body);background:var(--paper);-webkit-font-smoothing:antialiased}
+h1,h2,h3,.syne{font-family:"Syne",system-ui,sans-serif;color:var(--ink);margin:0}
+button{font-family:inherit;cursor:pointer}
+.lbl{font-family:"Syne",sans-serif;font-weight:500;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--deep);line-height:1.3}
+.app{display:grid;grid-template-columns:300px minmax(0,1fr) 320px;min-height:100vh}
+
+/* ---------- rail (trail map) ---------- */
+.rail{background:var(--dark);color:var(--mint);padding:26px 22px 28px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.rail .logo{height:17px;display:block;margin-bottom:26px}
+.ring{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.ring svg{width:64px;height:64px;flex:0 0 64px}
+.ring .pct{font-family:"Syne",sans-serif;font-weight:700;font-size:15px;fill:#fff}
+.ring b{display:block;font-family:"Syne",sans-serif;font-weight:700;font-size:15px;color:#fff;line-height:1.2}
+.ring span{font-size:13px;color:var(--second)}
+.trail{list-style:none;margin:0;padding:0;position:relative}
+.trail>li{position:relative;padding:0 0 4px 34px}
+.trail>li::before{content:"";position:absolute;left:10px;top:24px;bottom:-4px;width:0;border-left:2px dashed var(--subtle)}
+.trail>li:last-child::before{display:none}
+.trail>li.done::before{border-left:2px solid var(--accent)}
+.node{position:absolute;left:0;top:7px;width:22px;height:22px;border-radius:50%;border:2px solid var(--subtle);background:var(--dark);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--dark);font-weight:700}
+.trail>li.done>.node{background:var(--accent);border-color:var(--accent)}
+.trail>li.cur>.node{border-color:var(--accent);box-shadow:0 0 0 4px rgba(42,191,145,.18)}
+.trail>li.summit>.node{border-radius:6px}
+.pbtn{display:block;width:100%;text-align:left;background:none;border:0;color:var(--mint);padding:6px 8px;border-radius:8px}
+.pbtn:hover{background:var(--surface)}
+.pbtn .pn{font-family:"Syne",sans-serif;font-weight:700;font-size:15px;color:#fff;display:block;line-height:1.25}
+.trail>li.todo .pn{color:var(--second)}
+.pbtn .pc{font-size:12.5px;color:var(--muted)}
+.pbar{height:3px;background:var(--subtle);border-radius:200px;margin:5px 0 2px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--accent);border-radius:200px;transition:width .3s ease}
+.sub{list-style:none;margin:4px 0 8px;padding:0}
+.sub button{display:flex;gap:8px;align-items:baseline;width:100%;text-align:left;background:none;border:0;color:var(--second);font-size:13.5px;padding:4px 8px;border-radius:6px;line-height:1.3}
+.sub button:hover{background:var(--surface);color:#fff}
+.sub button.on{color:#fff;background:var(--surface)}
+.dot{flex:0 0 7px;width:7px;height:7px;border-radius:50%;border:1.5px solid var(--muted);transform:translateY(-1px)}
+.sub button.ok .dot{background:var(--accent);border-color:var(--accent)}
+.railfoot{margin-top:22px;border-top:1px solid var(--subtle);padding-top:14px;font-size:12.5px;color:var(--muted)}
+.railfoot button{background:none;border:1px solid var(--subtle);color:var(--second);border-radius:200px;padding:6px 12px;font-size:12px;margin:8px 6px 0 0}
+.railfoot button:hover{border-color:var(--accent);color:#fff}
+.saved::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:7px}
+.saved.warn::before{background:#e0a23c}
+
+/* ---------- main ---------- */
+.main{padding:0 0 90px;min-width:0}
+.top{position:sticky;top:0;z-index:5;background:rgba(243,248,246,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:12px 44px;display:flex;align-items:center;gap:16px}
+.top .where{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .tb{flex:0 0 160px;height:6px;background:var(--rule);border-radius:200px;overflow:hidden}
+.top .tb i{display:block;height:100%;background:var(--accent);transition:width .3s ease}
+.top .tp{font-family:"Syne",sans-serif;font-weight:700;font-size:13px;color:var(--ink);min-width:38px;text-align:right}
+.mbtn{display:none;background:var(--dark);color:#fff;border:0;border-radius:200px;padding:7px 13px;font-size:12.5px}
+.screen{max-width:740px;margin:0 auto;padding:38px 44px 0}
+.screen h1{font-weight:700;font-size:34px;line-height:1.1;margin:8px 0 12px;letter-spacing:-.01em}
+.screen h2{font-weight:700;font-size:20px;margin:30px 0 8px}
+.screen h3{font-weight:500;font-size:16.5px;margin:18px 0 6px}
+.lead{font-size:19px;line-height:1.45;color:var(--ink);font-weight:500;margin:0 0 14px}
+p{margin:0 0 12px}
+.small{font-size:14px;color:#4f6f65}
+.why{border-left:3px solid var(--deep);padding:2px 0 2px 16px;margin:16px 0}
+.why p{margin:4px 0 0}
+.f{margin:22px 0 0}
+.f label,.f .flabel{display:block;font-weight:700;color:var(--ink);font-size:16.5px;line-height:1.35;margin-bottom:3px}
+.help{font-size:14.5px;color:#4f6f65;margin:0 0 8px}
+textarea,input[type=text]{width:100%;font:inherit;color:var(--ink);background:#fff;border:1.5px solid var(--rule);border-radius:10px;padding:12px 14px;resize:vertical;line-height:1.5}
+textarea:focus,input[type=text]:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px rgba(42,191,145,.18)}
+textarea::placeholder,input::placeholder{color:#9db8ae}
+.core>label::after,.core>.flabel::after{content:"needed";font-family:"Syne",sans-serif;font-weight:500;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--deep);background:var(--mint);border-radius:200px;padding:2px 8px;margin-left:8px;vertical-align:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chip{font:inherit;font-size:14.5px;background:#fff;border:1.5px solid var(--rule);color:var(--body);border-radius:200px;padding:7px 14px;line-height:1.3;text-align:left}
+.chip:hover{border-color:var(--deep)}
+.chip.on{background:var(--surface);border-color:var(--surface);color:#fff}
+.chip .pg{margin-left:6px}
+.chip.on .pg{background:var(--subtle);color:var(--deco)}
+.pg{font-family:"Syne",sans-serif;font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:var(--mint);color:var(--deep);border-radius:200px;padding:2px 8px;white-space:nowrap}
+.qt{color:var(--ink);font-weight:500}
+.quote{border-left:3px solid var(--accent);padding-left:14px;margin:8px 0 10px}
+details.ex{background:var(--tint);border-radius:16px;margin:16px 0 0;overflow:hidden}
+details.ex summary{list-style:none;cursor:pointer;padding:13px 18px;font-family:"Syne",sans-serif;font-weight:500;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);display:flex;justify-content:space-between;gap:10px}
+details.ex summary::-webkit-details-marker{display:none}
+details.ex summary::after{content:"Show";color:var(--deep)}
+details.ex[open] summary::after{content:"Hide"}
+details.ex .exb{padding:0 18px 16px;font-size:15.5px}
+.exgrid{display:grid;grid-template-columns:150px 1fr;gap:10px 16px}
+.exgrid>.lbl{padding-top:4px;color:var(--ink)}
+.card{background:#fff;border:1px solid var(--rule);border-radius:16px;padding:18px 20px;margin:14px 0 0}
+.card.dark{background:var(--surface);border-color:var(--surface);color:var(--mint)}
+.card.dark .lbl{color:var(--accent)} .card.dark .qt{color:#fff}
+.note{background:#fff;border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:10px;padding:12px 16px;font-size:15px;margin:16px 0 0}
+.keyq{background:var(--dark);border-radius:16px;padding:20px 22px;margin:18px 0 0}
+.keyq .lbl{color:var(--accent)} .keyq div{font-family:"Syne",sans-serif;font-weight:700;font-size:23px;line-height:1.2;color:#fff;margin-top:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fw{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.fwc{background:#fff;border:1px solid var(--rule);border-radius:16px;padding:14px 16px;font-size:14.5px}
+.fwc h3{margin:2px 0 2px;font-weight:700;font-size:16px}
+.fwc .by{font-size:13px;color:#4f6f65;margin-bottom:8px}
+.flow{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:8px}
+.flow span{background:var(--tint);border-radius:200px;padding:3px 10px;font-size:13px;color:var(--ink);font-weight:500}
+.flow i{color:var(--accent);font-style:normal;font-weight:700}
+.rules{display:grid;gap:10px;margin-top:10px}
+.rule{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1.5px solid var(--rule);border-radius:16px;padding:14px 16px;text-align:left;font:inherit;color:inherit;width:100%}
+.rule.on{border-color:var(--accent);background:#f0faf6}
+.rn{flex:0 0 32px;width:32px;height:32px;border-radius:50%;background:var(--mint);color:var(--ink);font-family:"Syne",sans-serif;font-weight:700;display:flex;align-items:center;justify-content:center}
+.rule.on .rn{background:var(--accent)}
+.rule h3{margin:0 0 2px;font-size:16.5px}
+.rule p{margin:0;font-size:15px}
+.row{background:#fff;border:1px solid var(--rule);border-radius:16px;padding:14px 16px 16px;margin-top:12px;position:relative}
+.row .rnum{font-family:"Syne",sans-serif;font-weight:700;color:var(--accent);font-size:15px}
+.row .del{position:absolute;right:12px;top:10px;background:none;border:0;color:var(--muted);font-size:13px}
+.row .del:hover{color:#b3261e}
+.row .f{margin-top:12px} .row .f label,.row .flabel{font-size:14.5px}
+.add{margin-top:12px;background:#fff;border:1.5px dashed var(--deep);color:var(--deep);border-radius:200px;padding:9px 18px;font-size:14.5px;font-weight:500}
+.add:hover{background:var(--tint)}
+.tog{display:inline-flex;align-items:center;gap:8px;font-size:14.5px;background:#fff;border:1.5px solid var(--rule);border-radius:200px;padding:6px 14px;color:var(--body)}
+.tog.on{background:var(--surface);border-color:var(--surface);color:#fff}
+.tog::before{content:"";width:14px;height:14px;border-radius:4px;border:1.5px solid currentColor}
+.tog.on::before{background:var(--accent);border-color:var(--accent)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;align-items:stretch}
+.pair .draft{background:var(--tint);border-radius:12px;padding:12px 14px;font-size:15px}
+.pair .draft .lbl{color:var(--ink);margin-bottom:5px}
+.pair .f{margin:0;display:flex;flex-direction:column} .pair textarea{flex:1;min-height:104px}
+.strow{background:#fff;border:1px solid var(--rule);border-radius:16px;padding:14px 16px;margin-top:12px}
+.strow .hd{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.strow .from{font-size:14px;color:#4f6f65}
+.strow .to{font-family:"Syne",sans-serif;font-weight:700;font-size:18px;color:var(--deep)}
+.seg{display:inline-flex;border:1.5px solid var(--rule);border-radius:200px;overflow:hidden;margin:10px 0 0;background:#fff}
+.seg button{background:none;border:0;padding:7px 16px;font-size:14.5px;color:var(--body)}
+.seg button.on{background:var(--surface);color:#fff}
+.shapes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
+.shape{background:#fff;border:1.5px solid var(--rule);border-radius:16px;padding:12px 14px;text-align:left;font:inherit;color:inherit}
+.shape.on{border-color:var(--accent);background:#f0faf6}
+.shape svg{width:100%;height:46px;display:block;margin-bottom:6px}
+.acts .arow{display:flex;gap:10px;align-items:center;margin-top:8px}
+.acts .an{font-family:"Syne",sans-serif;font-weight:700;color:var(--accent);width:18px}
+.nav{display:flex;gap:12px;align-items:center;margin-top:36px;padding-top:20px;border-top:1px solid var(--rule)}
+.btn{background:var(--accent);color:var(--dark);border:0;border-radius:200px;padding:13px 26px;font-family:"Syne",sans-serif;font-weight:700;font-size:15px}
+.btn:hover{filter:brightness(1.06)}
+.btn.ghost{background:none;border:1.5px solid var(--rule);color:var(--body);font-weight:500}
+.btn.ghost:hover{border-color:var(--deep)}
+.btn.dark{background:var(--dark);color:#fff}
+.nav .left{margin-right:auto;font-size:13.5px;color:#4f6f65}
+/* waypoint */
+.way{background:var(--dark);color:var(--mint);border-radius:20px;padding:28px 28px 26px;margin-top:8px;position:relative;overflow:hidden}
+.way::after{content:"";position:absolute;right:-70px;top:-70px;width:220px;height:220px;border-radius:50%;background:var(--surface)}
+.way>*{position:relative;z-index:1}
+.way .lbl{color:var(--accent)} .way h1{color:#fff;font-size:30px;margin:8px 0 8px}
+.way p{color:var(--deco)}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 4px}
+.stat{background:var(--surface);border:1px solid var(--subtle);border-radius:14px;padding:10px 16px}
+.stat b{display:block;font-family:"Syne",sans-serif;font-size:24px;color:#fff;line-height:1.1}
+.stat span{font-size:12.5px;color:var(--second)}
+.checks{list-style:none;padding:0;margin:14px 0 0}
+.checks li{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--rule);font-size:15.5px}
+.checks .ck{flex:0 0 22px;width:22px;height:22px;border-radius:50%;border:2px solid var(--rule);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--dark)}
+.checks li.ok .ck{background:var(--accent);border-color:var(--accent)}
+.checks li .go{margin-left:auto;background:none;border:0;color:var(--deep);font-size:14px;text-decoration:underline;white-space:nowrap}
+/* summary one-pager */
+.onep{background:#fff;border:1px solid var(--rule);border-radius:20px;padding:30px 32px;margin-top:14px}
+.onep .nm{font-family:"Syne",sans-serif;font-weight:700;font-size:36px;line-height:1.05;color:var(--ink)}
+.onep .does{font-size:19px;color:var(--ink);font-weight:500;margin:10px 0 0}
+.onep h3{font-family:"Syne",sans-serif;font-weight:500;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--deep);margin:24px 0 6px}
+.missing{color:#b0672a;font-style:italic}
+.stg{display:grid;gap:10px;margin-top:6px}
+.sg{border:1px solid var(--rule);border-radius:14px;padding:12px 16px;display:grid;grid-template-columns:34px 1fr;gap:4px 12px}
+.sg .n{grid-row:span 3;font-family:"Syne",sans-serif;font-weight:700;font-size:22px;color:var(--accent)}
+.sg b{font-family:"Syne",sans-serif;font-size:17px}
+.sg p{margin:0;font-size:15px}
+.loopline{border:1.5px dashed var(--accent);border-radius:14px;padding:10px 16px;font-size:15px;margin-top:10px}
+/* side: framework so far */
+.side{border-left:1px solid var(--rule);padding:22px 20px;position:sticky;top:0;height:100vh;overflow-y:auto;background:#fafcfb}
+.side h2{font-size:15px;font-weight:700;margin:4px 0 12px}
+.sf{border:1px solid var(--rule);border-radius:16px;background:#fff;padding:16px}
+.sf .nm{font-family:"Syne",sans-serif;font-weight:700;font-size:21px;line-height:1.15;color:var(--ink)}
+.sf .nm.empty{color:#9db8ae}
+.sf .blk{margin-top:14px}
+.sf .blk p{margin:3px 0 0;font-size:14px}
+.sf .empty{color:#9db8ae}
+.schips{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.schip{display:flex;gap:8px;align-items:center;border-radius:10px;padding:6px 10px;font-size:14px;background:var(--tint);color:var(--ink);font-weight:500}
+.schip.ghost{background:none;border:1px dashed var(--rule);color:#9db8ae;font-weight:400}
+.schip i{font-style:normal;font-family:"Syne",sans-serif;font-weight:700;color:var(--accent);font-size:12px}
+.built{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px;text-align:center}
+.built div{background:var(--tint);border-radius:10px;padding:8px 4px}
+.built b{display:block;font-family:"Syne",sans-serif;font-size:19px;color:var(--ink)}
+.built span{font-size:11.5px;color:#4f6f65}
+.scrim{display:none}
+@media (max-width:1240px){
+  .app{grid-template-columns:280px minmax(0,1fr)}
+  .side{display:none;position:fixed;right:0;top:0;width:min(340px,92vw);z-index:30;box-shadow:-12px 0 40px rgba(0,0,0,.18)}
+  .side.open{display:block}
+  .mbtn.fwbtn{display:inline-block}
+}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{display:none;position:fixed;left:0;top:0;width:min(320px,90vw);z-index:30}
+  .rail.open{display:block}
+  .mbtn{display:inline-block}
+  .scrim.open{display:block;position:fixed;inset:0;background:rgba(14,31,25,.5);z-index:20}
+  .top{padding:10px 16px}.top .tb{flex-basis:70px}
+  .screen{padding:26px 18px 0}.screen h1{font-size:28px}
+  .grid2,.pair,.fw,.shapes{grid-template-columns:1fr}
+  .exgrid{grid-template-columns:1fr;gap:2px 0}.exgrid>.lbl{padding-top:10px}
+}
+@media (max-width:1240px){ .scrim.open{display:block;position:fixed;inset:0;background:rgba(14,31,25,.5);z-index:20} }
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media print{.rail,.side,.top,.nav{display:none!important}.app{display:block}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail" id="rail" aria-label="Your progress"></aside>
+  <main class="main">
+    <div class="top"><button type="button" class="mbtn" data-act="openrail">Map</button><div class="where" id="where"></div><div class="tb"><i id="tbar"></i></div><span class="tp" id="tpct"></span><button type="button" class="mbtn fwbtn" data-act="openside">My framework</button></div>
+    <div class="screen" id="screen"></div>
+  </main>
+  <aside class="side" id="side" aria-label="Your framework so far"></aside>
+</div>
+<div class="scrim" id="scrim" data-act="closedrawers"></div>
+<input type="file" id="restorefile" accept="application/json" hidden>
+<script src="./jspdf.umd.min.js"></script>
+<script>"use strict";
+/* Build Your Framework · online builder for Chris. Quotes are injected from the verified list. */
+const Q = {"asking_easier":{"text":"The asking was easier than I had spent thirty years assuming it would be.","page":71,"source":"manuscript"},"booth_kid":{"text":"I am describing what it was like to be the kid in the booth.","page":9,"source":"manuscript"},"booth_wait":{"text":"There was nothing to do but wait, because there was nowhere to go and no one to tell.","page":9,"source":"manuscript"},"borrow_shape":{"text":"I am borrowing the shape of an idea from quantum mechanics, not claiming you are literally a quantum system.","page":15,"source":"manuscript"},"call_truth":{"text":"I remember saying some version of the truth out loud to a stranger for the first time in twenty-three years.","page":14,"source":"manuscript"},"circumstance":{"text":"the problem was circumstance and not chemistry, a different job, a different city, a different year, and the drinking would sort itself out.","page":16,"source":"manuscript"},"daily_return_title":{"text":"The Daily Return","page":106,"source":"manuscript"},"disclosure_unsafe":{"text":"Honest disclosure feels viscerally unsafe, even when the actual environment poses no threat.","page":66,"source":"manuscript"},"entry_moment":{"text":"This is affecting my life, but I am not sure it is serious enough to ask for help.","source":"Positioning brief, section 03"},"every_addiction":{"text":"Every addiction I have ever seen, in whatever form it takes, is doing the same job.","page":10,"source":"manuscript"},"ex_call_ease":{"text":"And instead of the collapse I expected, the shame spiral, the reaching, the familiar descent, there was ease.","page":18,"source":"manuscript"},"guide_connect_q":{"text":"Who could I tell one true thing to?","source":"Framework guide, Connect"},"guide_unsure":{"text":"I am not sure how serious this is, but I would like to talk it through.","source":"Framework guide, Connect openings"},"metaphor_mechanism":{"text":"I am not going to dress up a metaphor as a mechanism.","page":5,"source":"manuscript"},"most_people":{"text":"Most people, it turns out, do want to know. They ask.","page":10,"source":"manuscript"},"need_help":{"text":"I have drifted very far from myself, and I need help to find a way back.","page":14,"source":"manuscript"},"okay_no_argue":{"text":"He did not argue with my resistance, reassure me, or make any promises.","page":33,"source":"manuscript"},"okay_not_debate":{"text":"Not a debate. Not a reassurance. Just okay.","page":24,"source":"manuscript"},"opening_sentence":{"text":"Something isn't working for me. Can we talk about it?","source":"Speaker sheet, section 05"},"physics":{"text":"This is not a metaphor for God. This is physics.","page":15,"source":"manuscript"},"preface_willing":{"text":"Not belief. Not a label. Not a story like mine. Just willingness.","page":3,"source":"manuscript"},"receiver_broken":{"text":"It is because the receiver is broken.","page":10,"source":"manuscript"},"receiver_delivery":{"text":"The attunement gets offered, and you cannot take delivery of it.","page":10,"source":"manuscript"},"sheet_sequence":{"text":"Tension · Recognition · The call · Hope and book · Invitation","source":"Speaker sheet, memory sequence"},"success_line":{"text":"I understand what is troubling me. I do not have to handle it alone. I know who I could talk to and how I could begin.","source":"Positioning brief, section 08"},"they_answered":{"text":"They answered. That is the whole miracle of that day.","page":14,"source":"manuscript"},"told_myself":{"text":"I told myself it was something else. Every time.","page":13,"source":"manuscript"}};
+const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const qt = (id, tag, lead) => { const e = Q[id]; return `<span class="qt">"${lead ? "... " : ""}${esc(e.text)}"</span> <span class="pg">${e.page ? "p. " + e.page : esc(tag || e.source)}</span>`; };
+
+/* ---------------- state ---------------- */
+const KEY = "chris-framework-v1";
+let storageOK = true, S = null;
+try { localStorage.setItem(KEY + "-t", "1"); localStorage.removeItem(KEY + "-t"); S = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { storageOK = false; }
+if (!S || typeof S !== "object") S = { a: {}, seen: {}, cur: null };
+S.a = S.a || {}; S.seen = S.seen || {};
+const A = S.a;
+const str = (k) => (typeof A[k] === "string" ? A[k].trim() : "");
+const has = (k) => str(k).length > 0;
+const arr = (k) => (Array.isArray(A[k]) ? A[k] : []);
+const rows = (k, n, blank) => { if (!Array.isArray(A[k])) A[k] = []; while (A[k].length < n) A[k].push(blank()); return A[k]; };
+let saveT = null, savedAt = null;
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { if (storageOK) { try { localStorage.setItem(KEY, JSON.stringify(S)); savedAt = new Date(); } catch (e) { storageOK = false; } } paintChrome(); }, 350); }
+
+/* ---------------- content ---------------- */
+const PARTS = [
+  { id: "start", name: "Start here", adds: "Who it is for, and the rules of the build." },
+  { id: "moments", name: "Your moments", adds: "The real experiences your framework is built from." },
+  { id: "before", name: "Before asking", adds: "The sentences that keep people from asking." },
+  { id: "ideas", name: "Your big ideas", adds: "Three ideas, each made teachable." },
+  { id: "stages", name: "Your stages", adds: "The stages a person moves through." },
+  { id: "name", name: "Name it", adds: "A name and a promise." },
+  { id: "summary", name: "Your framework", summit: true },
+  { id: "test", name: "Test it", bonus: true },
+];
+const MAIN = ["start", "moments", "before", "ideas", "stages", "name"];
+const CAND = [
+  ["c1", "The kid in the booth", "p. 9"], ["c2", "Knowing the signs and choosing another explanation", "p. 13"],
+  ["c3", "The call to Bowen Island", "p. 14"], ["c4", "The hemlock tree, six days in", "p. 7, p. 14"],
+  ["c5", "Your counselor's Okay", "p. 24"], ["c6", "The call that went unanswered, and the ease that followed", "p. 18"],
+  ["c7", "The lost backpack in Tokyo", "p. 19"], ["c8", "Saying it all out loud to your counselor", "p. 52"],
+  ["c9", "Your counselor's question about embellishing", "p. 62"], ["c10", "Your friend's poem at three weeks", "p. 93"],
+  ["c11", "Asking first before a hard conversation", "p. 98"], ["c12", "The phone that stopped being frightening", "p. 120"],
+];
+const MF = [
+  ["happening", "What was happening", "Where you were. What was going on. Keep it short.", true],
+  ["did", "What I actually did", "A real action, not only a realization. What did the realization make you willing or able to do?", true],
+  ["helped", "Who or what helped", "A person, a place, a sentence, a habit.", true],
+  ["try", "What someone else could try", "A smaller, safer version of your action.", true],
+  ["believed", "What I believed", "The rule you were living by at that moment.", false],
+  ["changed", "What changed", "What was different afterwards.", false],
+  ["notfit", "When this might not fit", "Who should not copy this, and why.", false],
+];
+const BARRIERS = ["shame", "self-reliance", "fear of labels", "religious expectations", "past rejection", "cost", "access"];
+const PS = [["statement", "Statement"], ["explanation", "Explanation"], ["model", "Model"], ["metaphor", "Metaphor"], ["story", "Story"], ["evidence", "Evidence"], ["action", "One small action someone could take"]];
+const PS_DEF = { statement: "The idea in one plain sentence.", explanation: "Why it is true, in two or three sentences.", model: "The parts, in order. A list is fine.", metaphor: "An image that makes it easy to hold. Label it as an image.", story: "A short scene from your life that shows it.", evidence: "What supports it beyond your story.", action: "Something a person could do this week because of this idea." };
+const SHEETS = [{ id: "A", title: "The broken receiver" }, { id: "B", title: "Okay" }, { id: "C", title: "It's not serious enough" }];
+const SR = [
+  ["Notice", "Notice", "Kept as it is."],
+  ["Journal", "Pause", "Writing becomes one way to pause, not the only way."],
+  ["Connect", "Connect", "Kept as it is."],
+  ["Part of Connect", "Receive", "New. Taking in the reply gets its own stage."],
+  ["Explore, and the Implement half of your last stage", "Explore and try", "Asking questions and trying one thing sit together."],
+  ["The Repeat half of your last stage", "Keep going", "A loop around the method, not a stage."],
+];
+const CRIT = ["Easy to say", "Fits the process", "Fits your voice", "Makes no promise you can't keep", "Different from existing programs"];
+const BEATS = [
+  ["Tension", "0:00 to 0:25", "The problem, in one true line of your own."],
+  ["Recognition", "0:25 to 0:45", "Name the moment before asking, in a young adult's words."],
+  ["The call", "0:45 to 1:10", "One short story that shows the idea."],
+  ["Hope and the method", "1:10 to 1:40", "Name your stages in one breath."],
+  ["Invitation", "1:40 to 2:00", "One thing they can try today."],
+];
+const TYPES = [["Experience", "It happened to you. Keep it, and say it is yours."], ["Interpretation", "Your reading of what happened. Say \"I think\" or \"in my experience\"."], ["Metaphor", "An image. Label it as an image."], ["Science", "A fact about the world. It needs a source for that exact claim."], ["Untested benefit", "A promise about what the method does. Say \"may\" until it is tested."]];
+const CALLS = ["Keep", "Soften", "Needs a source"];
+const CLAIM_EX = [["they_answered", "Experience", "Keep"], ["every_addiction", "Interpretation", "Soften"], ["receiver_broken", "Metaphor", "Keep, with a label"], ["physics", "Science", "Needs a source, or soften"]];
+
+/* ---------------- derived ---------------- */
+const custom = () => (Array.isArray(A.m_custom) ? A.m_custom : (A.m_custom = []));
+const momentTitle = (id) => { const c = CAND.find((x) => x[0] === id); if (c) return c[1]; const u = custom().find((x) => x.id === id); return u ? u.title : ""; };
+const momentPage = (id) => { const c = CAND.find((x) => x[0] === id); return c ? c[2] : ""; };
+const selMoments = () => arr("m_sel").filter((id) => momentTitle(id).trim());
+const stageName = (i) => { const c = A["st_call" + i]; if (c === "rename" && has("st_name" + i)) return str("st_name" + i); return SR[i][1]; };
+const finalStages = () => [0, 1, 2, 3, 4].filter((i) => A["st_call" + i] !== "reject").map((i) => ({ i, name: stageName(i) }));
+const loopOn = () => A.st_call5 !== "reject";
+const sentences = () => rows("sentences", 3, () => ({ s: "", barriers: [], young: false, how: "" }));
+const filledSent = () => sentences().filter((r) => (r.s || "").trim());
+const names = () => rows("names", 5, () => ({ n: "", t: [0, 0, 0, 0, 0] }));
+const finalName = () => { const n = names()[A.name_final]; return n && n.n.trim() ? n.n.trim() : ""; };
+const claims = () => rows("claims", 2, () => ({ s: "", type: "", call: "", rw: "" }));
+const logRows = () => rows("log", 3, () => ({ date: "", who: "", ex: "Connect", confused: "", produced: "", change: "" }));
+const acts = (i) => { const k = "sc" + i + "_acts"; if (!Array.isArray(A[k])) A[k] = ["", "", "", "", ""]; return A[k]; };
+
+/* ---------------- field helpers ---------------- */
+const fText = (k, label, help, r, core) => `<div class="f${core ? " core" : ""}"><label for="${k}">${label}</label>${help ? `<p class="help">${help}</p>` : ""}<textarea id="${k}" data-k="${k}" rows="${r || 4}">${esc(A[k] || "")}</textarea></div>`;
+const fShort = (k, label, help, core) => `<div class="f${core ? " core" : ""}"><label for="${k}">${label}</label>${help ? `<p class="help">${help}</p>` : ""}<input type="text" id="${k}" data-k="${k}" value="${esc(A[k] || "")}"></div>`;
+function fChips(k, label, help, opts, multi, core) {
+  const cur = multi ? arr(k) : [A[k]];
+  return `<div class="f${core ? " core" : ""}"><div class="flabel">${label}</div>${help ? `<p class="help">${help}</p>` : ""}<div class="chips">${opts.map((o) => {
+    const v = Array.isArray(o) ? o[0] : o, t = Array.isArray(o) ? o[1] : o;
+    return `<button type="button" class="chip ${cur.includes(v) ? "on" : ""}" data-chip="${multi ? "m" : "s"}" data-k="${k}" data-v="${esc(v)}"${multi && multi > 1 ? ` data-max="${multi}"` : ""}>${t}</button>`;
+  }).join("")}</div></div>`;
+}
+const exBox = (inner, title) => `<details class="ex"><summary>${title || "Example · Draft for Chris to rewrite"}</summary><div class="exb">${inner}</div></details>`;
+const lbl = (t) => `<div class="lbl">${t}</div>`;
+const why = (t) => `<div class="why">${lbl("Why it matters")}<p>${t}</p></div>`;
+
+/* ---------------- screens ---------------- */
+function screens() {
+  const L = [];
+  const add = (id, part, nav, render, req, extra) => L.push(Object.assign({ id, part, nav, render, req: req || (() => []) }, extra || {}));
+
+  /* ===== Part 0 · Start here ===== */
+  add("s_welcome", "start", "Welcome", () => `
+    ${lbl("Part 1")}<h1>Build your framework</h1>
+    <p class="lead">You already have the story. This turns it into a method other people can use.</p>
+    <p>You will work through six parts. Each part adds one piece. At the end the pieces come together on one page: your framework, in your words, with a name and a clear account of who it helps and how.</p>
+    <div class="fw">${PARTS.filter((p) => MAIN.includes(p.id)).map((p, i) => `<div class="fwc">${lbl("Part " + (i + 1))}<h3>${p.name}</h3><div>${p.adds}</div></div>`).join("")}</div>
+    <div class="note"><b>How it works.</b> One screen at a time. Your answers save on this device as you type, so use the same browser each time. You can stop whenever you like and pick up where you left off. Every example is a draft for you to rewrite. Lines from your manuscript show the page, like <span class="pg">p. 14</span>.</div>
+    <div class="note"><b>A note on care.</b> No screen asks for graphic detail. Keep hard scenes short. If writing brings up more than you want to carry alone, stop and reach out to your own support first. This can wait.</div>`);
+
+  add("s_who", "start", "Who it is for", () => `
+    ${lbl("Part 1")}<h1>Who this is for</h1>
+    <p class="lead">Start with young adults who look fine from the outside.</p>
+    <p>They have the job, the place, the plans. On the inside they know that what used to work is now destroying them. Your framework reaches them before it is too late. They do not have to be students. They do not need a label, and they do not need a crisis.</p>
+    <div class="card dark">${lbl("Where a person starts")}<p>${qt("entry_moment", "positioning brief")}</p>${lbl("Where they finish")}<p style="margin:4px 0 0">${qt("success_line", "positioning brief")}</p></div>
+    ${exBox(`<p><b>Sam, 27.</b> From the outside: a good job, rent paid, never misses the gym, the friend everyone leans on.</p><p>On the inside: drinks most nights to switch off. The mornings are getting harder to hide. Sam knows it, and tells no one.</p><p class="small">Sam is made up. Write your own person. It can be you at 25.</p>`, "Example · A made-up person · Draft for Chris to rewrite")}
+    <div class="grid2">${fText("aud_outside", "From the outside, this person looks like", "What everyone else sees.", 4, true)}${fText("aud_inside", "On the inside, what is true?", "What they know and have not said.", 4, true)}</div>
+    ${fText("aud_person", "What would you want this person to hear from you?", "One or two sentences. Optional.", 3)}`,
+    () => [has("aud_outside"), has("aud_inside")]);
+
+  add("s_field", "start", "What strong frameworks share", () => `
+    ${lbl("Part 1")}<h1>What strong frameworks share</h1>
+    <p class="lead">Before you build yours, look at five from your field.</p>
+    <div class="fw">
+      <div class="fwc"><h3>Stages of Change</h3><div class="by">Prochaska and DiClemente</div><div class="flow"><span>Precontemplation</span><i>&rsaquo;</i><span>Contemplation</span><i>&rsaquo;</i><span>Preparation</span><i>&rsaquo;</i><span>Action</span><i>&rsaquo;</i><span>Maintenance</span></div><div><b>What to borrow.</b> It meets people where they are. Not ready is a stage, not a failure.</div></div>
+      <div class="fwc"><h3>Motivational Interviewing</h3><div class="by">Miller and Rollnick</div><div class="flow"><span>Engaging</span><i>&rsaquo;</i><span>Focusing</span><i>&rsaquo;</i><span>Evoking</span><i>&rsaquo;</i><span>Planning</span></div><div><b>What to borrow.</b> The person's own reasons do the work. The helper does not push.</div></div>
+      <div class="fwc"><h3>R U OK?</h3><div class="by">Australian conversation model</div><div class="flow"><span>Ask</span><i>&rsaquo;</i><span>Listen</span><i>&rsaquo;</i><span>Encourage action</span><i>&rsaquo;</i><span>Check in</span></div><div><b>What to borrow.</b> Four plain verbs. Small enough for one conversation.</div></div>
+      <div class="fwc"><h3>The help-seeking model</h3><div class="by">Rickwood and colleagues, 2005</div><div class="flow"><span>Awareness</span><i>&rsaquo;</i><span>Expression</span><i>&rsaquo;</i><span>Availability</span><i>&rsaquo;</i><span>Willingness</span></div><div><b>What to borrow.</b> It maps the ground before a person asks. That is your ground too.</div></div>
+      <div class="fwc"><h3>SBIRT</h3><div class="by">Used in health settings</div><div class="flow"><span>Screening</span><i>&rsaquo;</i><span>Brief intervention</span><i>&rsaquo;</i><span>Referral to treatment</span></div><div><b>What to borrow.</b> Early and brief. It acts in minutes, before a crisis.</div></div>
+      <div class="fwc" style="background:var(--tint);border-color:var(--tint)"><h3>What they have in common</h3><div class="by">Six things to notice</div><div>Few parts. Plain verbs. A clear way in. One action per part. A shape you can draw. An honest edge: each one says what it does not do.</div></div>
+    </div>
+    <p class="small" style="margin-top:12px">These are here so you can see what strong frameworks share. Yours stays your own. Check the original source before you name any of them in public.</p>
+    ${fChips("fw_elements", "Which of these do you want yours to have?", "Pick as many as fit.", ["3 to 6 parts", "Plain verbs", "A clear way in", "One small action per part", "A shape you can draw", "Room to say no", "Says what it is not", "Works without a label"], true, true)}
+    ${fText("fw_admire", "A framework you admire, from any field. What makes it work?", "Optional. The outdoors and the classroom both count.", 3)}`,
+    () => [arr("fw_elements").length > 0]);
+
+  add("s_rules", "start", "Three rules", () => `
+    ${lbl("Part 1")}<h1>Three rules for the build</h1>
+    <p class="lead">Tap each rule once you agree to it.</p>
+    <div class="rules">${[
+      ["Your own method", "It stands on its own. AA belongs in your story, credited honestly. Its words stay out of your framework."],
+      ["Physics is optional", "You can use it as an image, with a label that says so. It is never the reason the method works."],
+      ["Readiness, not recovery", "The method ends when a person knows who to talk to and how to begin. Ongoing care sits outside it."],
+    ].map(([h, p], i) => `<button type="button" class="rule ${A["rule" + i] ? "on" : ""}" data-act="rule" data-i="${i}"><span class="rn">${A["rule" + i] ? "✓" : i + 1}</span><span><h3>${h}</h3><p>${p}</p></span></button>`).join("")}</div>
+    <div class="note">You already hold yourself to the second rule. From your preface: ${qt("metaphor_mechanism")}</div>`,
+    () => [!!A.rule0, !!A.rule1, !!A.rule2]);
+
+  add("s_way", "start", "Waypoint", () => waypoint("start", "You know who it is for.", "The ground is set. Next you collect the raw material: the moments from your own life.",
+    [[str("aud_outside") ? "1" : "0", "person described"], [String(arr("fw_elements").length), "features chosen"]],
+    [[has("aud_outside") && has("aud_inside"), "You described the person, outside and inside.", "s_who"], [arr("fw_elements").length > 0, "You chose what your framework should have.", "s_field"], [A.rule0 && A.rule1 && A.rule2, "You agreed to the three rules.", "s_rules"]]), null, { way: true });
+
+  /* ===== Part 1 · Your moments ===== */
+  add("m_pick", "moments", "Choose your moments", () => {
+    const n = selMoments().length;
+    return `${lbl("Part 2")}<h1>Your moments</h1>
+    <p class="lead">Collect the moments that changed how you ask for help, and how you let it in.</p>
+    ${why("These moments are the raw material for everything else. A framework built from real moments sounds like you. One built from ideas alone sounds like everyone.")}
+    <div class="keyq">${lbl("The question to ask of every moment")}<div>What did that realization make you willing or able to do?</div></div>
+    <div class="f core"><div class="flabel">Pick from your manuscript</div><p class="help">Five is the minimum. Eight to ten is ideal. Small moments count. A moment where help did not work counts too.</p>
+      <div class="chips">${CAND.map(([id, t, p]) => `<button type="button" class="chip ${arr("m_sel").includes(id) ? "on" : ""}" data-chip="m" data-k="m_sel" data-v="${id}">${t} <span class="pg">${p}</span></button>`).join("")}</div></div>
+    <div class="f"><div class="flabel">Add moments that are not in the book</div>
+      ${custom().map((u, i) => `<div class="acts"><div class="arow"><input type="text" data-custom="${i}" value="${esc(u.title)}" placeholder="Give the moment a short title"><button type="button" class="tog ${arr("m_sel").includes(u.id) ? "on" : ""}" data-chip="m" data-k="m_sel" data-v="${u.id}">Use it</button></div></div>`).join("")}
+      <button type="button" class="add" data-act="addcustom">Add a moment of your own</button></div>
+    <p class="small" style="margin-top:16px"><b>${n}</b> picked. ${n < 5 ? (5 - n) + " more to reach the minimum." : n < 8 ? "Good. " + (8 - n) + " more would give you a strong set." : "A strong set."}</p>`;
+  }, () => [selMoments().length >= 5]);
+
+  selMoments().forEach((id, idx, all) => {
+    add("m_card_" + id, "moments", momentTitle(id), () => `
+      ${lbl("Moment " + (idx + 1) + " of " + all.length)}<h1>${esc(momentTitle(id))}</h1>
+      ${momentPage(id) ? `<p><span class="pg">${momentPage(id)}</span> <span class="small">in your manuscript</span></p>` : ""}
+      <p>One or two plain sentences per box is enough. Leave out graphic detail.</p>
+      ${exBox(`<div class="exgrid">
+        ${lbl("What was happening")}<div>You had run out of ways to manage alone. You phoned a treatment centre on Bowen Island. <span class="small">Paraphrase. The hard details are left out on purpose.</span></div>
+        ${lbl("What I actually did")}<div>You called. You said one true thing to a stranger.<div class="quote">${qt("call_truth")}</div></div>
+        ${lbl("Who or what helped")}<div>A stranger who picked up.<div class="quote">${qt("they_answered")}</div></div>
+        ${lbl("What someone else could try")}<div>Say one true sentence out loud to one person. It can be a stranger whose job is to listen, such as a helpline.</div>
+        ${lbl("What changed")}<div>Six days later an honest thought arrived.<div class="quote">${qt("need_help")}</div></div>
+        ${lbl("When this might not fit")}<div>Most people are far from this point. Their version is smaller and earlier. A call is not always answered the first time, so they need a backup.</div>
+      </div>`, "See a filled card · The call to Bowen Island · Draft for Chris to rewrite")}
+      ${MF.filter((f) => f[3]).map(([k, t, h]) => fText("m_" + id + "_" + k, t, h, 3, true)).join("")}
+      <h2>Go deeper</h2><p class="small">Optional, and worth it for your strongest moments.</p>
+      ${MF.filter((f) => !f[3]).map(([k, t, h]) => fText("m_" + id + "_" + k, t, h, 3)).join("")}`,
+      () => MF.filter((f) => f[3]).map(([k]) => has("m_" + id + "_" + k)));
+  });
+
+  add("m_top", "moments", "Your strongest three", () => {
+    const sm = selMoments();
+    return `${lbl("Part 2")}<h1>Your strongest three</h1>
+    <p class="lead">Which three moments matter most to you?</p>
+    <p>These will anchor your stages later. Choose the ones you could tell in your sleep.</p>
+    ${sm.length ? fChips("m_top", "Pick up to three", "", sm.map((id) => [id, esc(momentTitle(id))]), 3, true) : `<div class="note">Choose your moments first.</div>`}
+    ${fText("m_pattern", "What do your strongest moments have in common?", "Optional. This is often the first sign of your framework.", 3)}
+    <div class="note">A quieter moment can be as strong as a big one. From your manuscript, two weeks into treatment: ${qt("ex_call_ease")}</div>`;
+  }, () => [arr("m_top").filter((id) => selMoments().includes(id)).length >= Math.min(3, Math.max(1, selMoments().length))]);
+
+  add("m_way", "moments", "Waypoint", () => {
+    const sm = selMoments(), withAct = sm.filter((id) => has("m_" + id + "_did")).length;
+    return waypoint("moments", "You have your raw material.", "Every stage you build from here can point back to something that really happened.",
+      [[String(sm.length), "moments"], [String(withAct), "with a real action"], [String(arr("m_top").length), "strongest picked"]],
+      [[sm.length >= 5, sm.length >= 8 ? "You have eight or more moments." : `You have at least five moments. You have ${sm.length}; eight to ten is ideal.`, "m_pick"],
+       [sm.length > 0 && withAct === sm.length, "Every moment has a real action, not only a realization.", sm.find((id) => !has("m_" + id + "_did")) ? "m_card_" + sm.find((id) => !has("m_" + id + "_did")) : "m_pick"],
+       [arr("m_top").length >= Math.min(3, Math.max(1, sm.length)), "You picked your strongest three.", "m_top"]]);
+  }, null, { way: true });
+
+  /* ===== Part 2 · Before asking ===== */
+  add("b_list", "before", "Your sentences", () => `
+    ${lbl("Part 3")}<h1>The moment before asking</h1>
+    <p class="lead">Name the sentences you used to avoid asking for help.</p>
+    ${why("Most people know help exists. What stops them is a sentence they tell themselves. If you can name your sentences, you can help someone else hear their own.")}
+    ${exBox(`<p><b>Sentences from your manuscript</b></p><div class="quote">${qt("told_myself")}</div><div class="quote">${qt("circumstance", null, true)}</div><div class="quote">${qt("disclosure_unsafe")}</div>
+      <p><b>How a young adult might say it</b></p><div class="quote"><span class="qt">"My job is going fine, so it can't be that bad."</span> <span class="pg">made up</span></div>
+      <p class="small">Our guess at the barriers: fear of labels for the first line, self-reliance for the second, past rejection for the third. Change these if we have it wrong.</p>`)}
+    <p class="small" style="margin-top:14px">The seven barriers come from your positioning brief. Write the exact words you used, to yourself or to other people. Three is the minimum; six is better.</p>
+    ${sentences().map((r, i) => `<div class="row"><span class="rnum">${i + 1}</span>${sentences().length > 3 ? `<button type="button" class="del" data-act="delrow" data-list="sentences" data-i="${i}">Remove</button>` : ""}
+      <div class="f"><label>The sentence I used</label><input type="text" data-list="sentences" data-i="${i}" data-f="s" value="${esc(r.s)}"></div>
+      <div class="f"><div class="flabel">Which barrier is underneath it?</div><div class="chips">${BARRIERS.map((b) => `<button type="button" class="chip ${(r.barriers || []).includes(b) ? "on" : ""}" data-act="barrier" data-i="${i}" data-v="${b}">${b}</button>`).join("")}</div></div>
+      <div class="f"><button type="button" class="tog ${r.young ? "on" : ""}" data-act="young" data-i="${i}">A young adult would say this too</button></div>
+      <div class="f"><label>How might they say it?</label><input type="text" data-list="sentences" data-i="${i}" data-f="how" value="${esc(r.how)}"></div></div>`).join("")}
+    <button type="button" class="add" data-act="addrow" data-list="sentences">Add another sentence</button>`,
+    () => { const f = filledSent(); return [f.length >= 3, f.length > 0 && f.every((r) => (r.barriers || []).length > 0), f.filter((r) => r.young).length >= 2]; });
+
+  add("b_one", "before", "The one that mattered", () => {
+    const f = filledSent();
+    return `${lbl("Part 3")}<h1>The one that mattered</h1>
+    <p class="lead">Which sentence do you most wish someone had questioned?</p>
+    ${f.length ? fChips("b_one", "Choose one", "", f.map((r) => [r.s.trim(), esc(r.s.trim())]), false, true) : `<div class="note">Write your sentences first.</div>`}
+    ${fText("b_one_why", "What might have happened if someone had questioned it?", "Two or three sentences.", 4)}
+    <div class="note">Something to hold on to, from your manuscript: ${qt("asking_easier")}</div>`;
+  }, () => [has("b_one") && filledSent().some((r) => r.s.trim() === str("b_one"))]);
+
+  add("b_way", "before", "Waypoint", () => {
+    const f = filledSent();
+    return waypoint("before", "You can hear the sentences now.", "These are the walls your framework has to get past. Next you turn three of your ideas into something teachable.",
+      [[String(f.length), "sentences"], [String(new Set(f.flatMap((r) => r.barriers || [])).size), "barriers named"], [String(f.filter((r) => r.young).length), "a young adult would say"]],
+      [[f.length >= 3, f.length >= 6 ? "You have six or more sentences." : `You have at least three sentences. You have ${f.length}; six is better.`, "b_list"],
+       [f.length > 0 && f.every((r) => (r.barriers || []).length), "Each sentence has a barrier.", "b_list"],
+       [f.filter((r) => r.young).length >= 2, "At least two are sentences a young adult would say.", "b_list"],
+       [has("b_one"), "You chose the one you wish someone had questioned.", "b_one"]]);
+  }, null, { way: true });
+
+  /* ===== Part 3 · Your big ideas ===== */
+  add("i_intro", "ideas", "How an idea sheet works", () => `
+    ${lbl("Part 4")}<h1>Your big ideas</h1>
+    <p class="lead">Turn three of your ideas into one sheet each, so each idea can stand on its own.</p>
+    ${why("An idea is easier to teach when it has a plain statement, a picture, a story and one thing to do. A sheet holds all of that. It also shows you quickly where an idea is still thin.")}
+    <h2>The seven parts of a sheet</h2>
+    <div class="fw">${PS.map(([k, t]) => `<div class="fwc">${lbl(t)}<div>${PS_DEF[k]}</div></div>`).join("")}</div>
+    <p class="small" style="margin-top:12px">The format is the pink sheet from Matt Church and Peter Cook's book Think, as noted in our framework guide.</p>
+    <h2>Your three ideas</h2>
+    <div class="fw"><div class="fwc">${lbl("Idea A")}<h3>The broken receiver</h3><div>Half filled from your manuscript.</div></div><div class="fwc">${lbl("Idea B")}<h3>Okay</h3><div>Blank, with prompts.</div></div><div class="fwc">${lbl("Idea C")}<h3>It's not serious enough</h3><div>Blank, with prompts.</div></div><div class="fwc">${lbl("Spare")}<h3>One of your own</h3><div>Optional.</div></div></div>`);
+
+  const A_DRAFT = {
+    statement: `Help can be offered and still not land. If you learned early that you would not be heard, care can be hard to take in.`,
+    explanation: `<div class="quote">${qt("most_people")}</div><div class="quote">${qt("receiver_delivery")}</div>`,
+    model: `The response you expect · the response you get · a chance to look again. <span class="small">From our framework guide. Yours to change.</span>`,
+    metaphor: `<div class="quote">${qt("receiver_broken")}</div><span class="small">Your image for your own experience. With other people, avoid calling anyone broken.</span>`,
+    story: `<div class="quote">${qt("booth_wait")}</div><div class="quote">${qt("booth_kid")}</div>`,
+    evidence: `<span class="small">Left blank on purpose. What supports this beyond your story?</span>`,
+    action: `<span class="small">Left blank on purpose. What could a person do this week to test whether care is getting through?</span>`,
+  };
+  const research = (key) => `<button type="button" class="tog ${str(key) === "to research" ? "on" : ""}" data-act="research" data-k="${key}" style="margin-top:8px">Mark as "to research"</button>`;
+  add("i_A", "ideas", "The broken receiver", () => `
+    ${lbl("Idea A · Half filled")}<h1>The broken receiver</h1>
+    <p>On the left is a draft from your manuscript. On the right, write your version. Keep what is true. Change what is not.</p>
+    ${PS.map(([k, t]) => `<div class="pair"><div class="draft">${lbl(t)}${A_DRAFT[k]}</div><div class="f core"><label for="i_A_${k}">Your version</label><textarea id="i_A_${k}" data-k="i_A_${k}" rows="3">${esc(A["i_A_" + k] || "")}</textarea>${k === "evidence" ? research("i_A_evidence") : ""}</div></div>`).join("")}`,
+    () => PS.map(([k]) => has("i_A_" + k)));
+
+  const PROMPT = {
+    B: { statement: "What did that one word let you do? Say it as one plain sentence.", explanation: "Why did it work on you? What did he not do?", model: "What are the two or three parts, in order?", metaphor: "Is there an image for a reply that leaves room?", story: "Tell the arrival in three or four sentences. Keep it short.", evidence: "What would show this is true for other people?", action: "What could a young adult, or their friend, do this week that uses this idea?" },
+    C: { statement: "What do you want a young adult to know about \"serious enough\"? One sentence.", explanation: "What did comparing yourself to worse cases do for you?", model: "What replaces the severity bar? For example: notice · describe · ask.", metaphor: "An image for a first conversation that is not a test.", story: "A time you decided it was not bad enough. Short, and no graphic detail.", evidence: "Who could you ask? Six to eight young adults is a start.", action: "One question a person could ask without choosing a label." },
+  };
+  const STRIP = {
+    B: `<div class="card">${lbl("From your manuscript")}<div class="quote">${qt("okay_not_debate")}</div><div class="quote">${qt("okay_no_argue")}</div></div>`,
+    C: `<div class="card">${lbl("From your positioning brief")}<div class="quote">${qt("entry_moment", "positioning brief")}</div>${lbl("From your preface")}<div class="quote">${qt("preface_willing")}</div></div>`,
+  };
+  ["B", "C"].forEach((sid) => add("i_" + sid, "ideas", SHEETS.find((s) => s.id === sid).title, () => `
+    ${lbl("Idea " + sid + " · Blank with prompts")}<h1>${SHEETS.find((s) => s.id === sid).title}</h1>
+    ${STRIP[sid]}
+    ${PS.map(([k, t]) => fText("i_" + sid + "_" + k, t, PROMPT[sid][k], k === "story" ? 4 : 3, true) + (k === "evidence" ? research("i_" + sid + "_evidence") : "")).join("")}`,
+    () => PS.map(([k]) => has("i_" + sid + "_" + k))));
+  add("i_D", "ideas", "A spare idea", () => `
+    ${lbl("Spare · Optional")}<h1>An idea of your own</h1>
+    <p>Two more from our framework guide that you could use: <b>They answered</b> and <b>Willingness before certainty</b>. Or bring your own.</p>
+    ${fShort("i_D_title", "Name the idea", "")}
+    ${PS.map(([k, t]) => fText("i_D_" + k, t, PS_DEF[k], 3)).join("")}`);
+  add("i_way", "ideas", "Waypoint", () => {
+    const full = (sid) => PS.every(([k]) => has("i_" + sid + "_" + k));
+    return waypoint("ideas", "Three ideas you can teach.", "Each one now has a statement, a story and one small action. Next you build the stages.",
+      [[String(["A", "B", "C"].filter(full).length), "of 3 ideas complete"], [String(["A", "B", "C", "D"].reduce((n, s) => n + (has("i_" + s + "_action") ? 1 : 0), 0)), "small actions"]],
+      [[full("A"), "The broken receiver has all seven parts.", "i_A"], [full("B"), "Okay has all seven parts.", "i_B"], [full("C"), "It's not serious enough has all seven parts.", "i_C"]]);
+  }, null, { way: true });
+
+  /* ===== Part 4 · Your stages ===== */
+  add("st_choose", "stages", "Choose your stages", () => `
+    ${lbl("Part 5")}<h1>Your stages</h1>
+    <p class="lead">Decide the stages of your method, in your words.</p>
+    ${why("The stages are the spine of the framework. They need to be yours. Our suggestion is only a suggestion. A renamed or rejected stage is a good result if you know why.")}
+    <p class="small">Your original five: Notice · Journal · Connect · Explore · Implement and Repeat.</p>
+    ${SR.map(([o, v, n], i) => `<div class="strow"><div class="hd"><span class="from">${o}</span><span class="small">&rsaquo;</span><span class="to">${v}</span></div><p class="small" style="margin:2px 0 0">${n}</p>
+      <div class="seg">${["accept", "rename", "reject"].map((c) => `<button type="button" class="${A["st_call" + i] === c ? "on" : ""}" data-act="call" data-i="${i}" data-v="${c}">${c[0].toUpperCase() + c.slice(1)}</button>`).join("")}</div>
+      ${A["st_call" + i] === "rename" ? `<div class="f core"><label>Your name for it</label><input type="text" data-k="st_name${i}" value="${esc(A["st_name" + i] || "")}"></div>` : ""}
+      <div class="f"><label>Why?</label><input type="text" data-k="st_why${i}" value="${esc(A["st_why" + i] || "")}"></div></div>`).join("")}`,
+    () => SR.map((_, i) => !!A["st_call" + i] && (A["st_call" + i] !== "rename" || has("st_name" + i))));
+
+  add("st_shape", "stages", "The shape", () => `
+    ${lbl("Part 5")}<h1>The shape</h1>
+    <p class="lead">Is your method a line, a loop, or something else?</p>
+    <div class="shapes">${[
+      ["line", "A line", "One stage after another.", `<line x1="8" y1="23" x2="112" y2="23" stroke="#2d6655" stroke-width="1.5"/><circle cx="8" cy="23" r="4" fill="#2abf91"/><circle cx="42" cy="23" r="4" fill="#2abf91"/><circle cx="78" cy="23" r="4" fill="#2abf91"/><circle cx="112" cy="23" r="4" fill="#2abf91"/>`],
+      ["loop", "A loop", "You come back around.", `<ellipse cx="60" cy="23" rx="36" ry="17" fill="none" stroke="#2d6655" stroke-width="1.5"/><circle cx="24" cy="23" r="4" fill="#2abf91"/><circle cx="60" cy="6" r="4" fill="#2abf91"/><circle cx="96" cy="23" r="4" fill="#2abf91"/><circle cx="60" cy="40" r="4" fill="#2abf91"/>`],
+      ["other", "Something else", "A spiral, a map, a trail.", `<path d="M10 34 C 30 2, 50 44, 70 16 S 100 10, 112 30" fill="none" stroke="#2d6655" stroke-width="1.5" stroke-dasharray="3 3"/><circle cx="10" cy="34" r="4" fill="#2abf91"/><circle cx="112" cy="30" r="4" fill="#2abf91"/>`],
+    ].map(([v, t, d, svg]) => `<button type="button" class="shape ${A.st_shape === v ? "on" : ""}" data-act="shape" data-v="${v}"><svg viewBox="0 0 120 46">${svg}</svg>${lbl(t)}<div class="small">${d}</div></button>`).join("")}</div>
+    ${fShort("st_enter", "Where does a person enter?", "", true)}
+    ${fShort("st_skip", "Can they skip a stage?", "")}
+    ${fShort("st_back", "What brings them back?", "")}
+    ${fText("st_shape_note", "Describe the shape in a sentence or two", "Optional. If you draw it on paper, keep the drawing for your first check-in.", 3)}`,
+    () => [!!A.st_shape, has("st_enter")]);
+
+  finalStages().forEach((st, idx, all) => {
+    const i = st.i, p = "sc" + i + "_", sm = selMoments();
+    add("st_card_" + i, "stages", st.name, () => `
+      ${lbl("Stage " + (idx + 1) + " of " + all.length)}<h1>${esc(st.name)}</h1>
+      <p>Write this so a stranger could run it without you in the room.</p>
+      ${exBox(`<div class="exgrid">
+        ${lbl("Struggling with")}<div>Not knowing who to tell, or how to start.</div>
+        ${lbl("Question")}<div>${qt("guide_connect_q", "framework guide")}</div>
+        ${lbl("Practice")}<div>1. Pick one person or service. Pick one backup.<br>2. Decide what you want from them: listening, information, practical help, or professional care.<br>3. Write your opening sentence. One you already use: ${qt("opening_sentence", "speaker sheet")}<br>4. Say it out loud once, on your own.<br>5. Choose when you could say or send it. Sending is always your choice.</div>
+        ${lbl("May help because")}<div>Asking may feel less risky once you have picked the person and the first sentence.</div>
+        ${lbl("Leaves with")}<div>A person or service, an opening sentence, and a backup.</div>
+        ${lbl("Made-up example")}<div>Sam picks an older sister. The backup is a GP appointment. Sam's opening: ${qt("guide_unsure", "framework guide")}</div>
+        ${lbl("Watch out for")}<div>Don't push anyone to send the message on the spot. A caring reply cannot be promised. Friends can listen, but they are not trained professionals.</div>
+      </div>`, "See a worked card · Connect · Draft for Chris to rewrite")}
+      ${fText(p + "struggle", "The person is struggling with", "What is hard for them at this point?", 2, true)}
+      ${fShort(p + "question", "The one question this stage asks", "", true)}
+      <div class="f core acts"><div class="flabel">The practice · three to five small actions</div><p class="help">In order. Each one should take minutes, and work with a made-up example.</p>
+        ${acts(i).map((v, n) => `<div class="arow"><span class="an">${n + 1}</span><input type="text" data-acts="${i}" data-n="${n}" value="${esc(v)}"></div>`).join("")}</div>
+      ${fText(p + "why", "This may help because", "Your best explanation. Say \"may\" where you are not sure.", 3, true)}
+      ${sm.length ? fChips(p + "moment", "A scene from your story", "Pick the moment that shows this stage.", sm.map((id) => [id, esc(momentTitle(id))]), false) : ""}
+      ${fText(p + "scene", "Tell that scene in two or three sentences", "Optional.", 3)}
+      ${fText(p + "leaves", "What the person leaves with", "Something they can hold: a name, a sentence, a plan.", 2, true)}
+      ${fText(p + "example", "A made-up young adult doing it", "No real person. A few sentences.", 3, true)}
+      ${fText(p + "watch", "Watch out for, and its limits", "How could this go wrong, or put pressure on someone? What does it not do?", 3, true)}`,
+      () => [has(p + "struggle"), has(p + "question"), acts(i).filter((v) => (v || "").trim()).length >= 3, has(p + "why"), has(p + "leaves"), has(p + "example"), has(p + "watch")]);
+  });
+  if (loopOn()) add("st_loop", "stages", stageName(5) + " (the loop)", () => `
+    ${lbl("The loop")}<h1>${esc(stageName(5))}</h1>
+    <p class="lead">The loop is not a stage. It is permission to come back.</p>
+    ${fText("loop_when", "When might a person come back?", "", 3, true)}
+    ${fText("loop_optional", "What stays optional, always?", "For example: they never have to keep telling people.", 3, true)}
+    ${fText("loop_sentence", "One sentence you would say to someone who comes back", "Optional.", 2)}`,
+    () => [has("loop_when"), has("loop_optional")]);
+  add("st_way", "stages", "Waypoint", () => {
+    const fs = finalStages(), done = fs.filter((s) => screenById("st_card_" + s.i) && screenById("st_card_" + s.i).req().every(Boolean)).length;
+    return waypoint("stages", "The spine is built.", "Your stages now have questions, practices and limits. One thing is left: a name.",
+      [[String(fs.length), "stages"], [String(done), "cards complete"], [A.st_shape ? "1" : "0", "shape chosen"]],
+      [[SR.every((_, i) => !!A["st_call" + i]), "Every row has a choice.", "st_choose"], [!!A.st_shape && has("st_enter"), "You chose a shape and a way in.", "st_shape"],
+       [fs.length > 0 && done === fs.length, `Every stage card is complete. ${done} of ${fs.length} done.`, (fs.find((s) => !screenById("st_card_" + s.i).req().every(Boolean)) || {}).i !== undefined ? "st_card_" + fs.find((s) => !screenById("st_card_" + s.i).req().every(Boolean)).i : "st_choose"],
+       [!loopOn() || (has("loop_when") && has("loop_optional")), "The loop is described.", "st_loop"]]);
+  }, null, { way: true });
+
+  /* ===== Part 5 · Name it ===== */
+  add("n_names", "name", "Name ideas", () => `
+    ${lbl("Part 6")}<h1>Name it</h1>
+    <p class="lead">Give your framework a name that passes five tests.</p>
+    ${why("A name makes the framework easy to remember and easy to pass on. It comes last on purpose. A good name describes something that already works.")}
+    <div class="card">${CRIT.map((c, i) => `<div style="display:flex;gap:10px;align-items:center;margin:4px 0"><span class="rn" style="flex-basis:26px;width:26px;height:26px;font-size:13px">${i + 1}</span><b>${c}</b></div>`).join("")}</div>
+    ${exBox(`<p><b>Testing a name: "The Practice of Return"</b></p><p>Easy to say: yes. Fits your voice: yes. Chapter Ten of your manuscript is called ${qt("daily_return_title")}. Makes no promise: yes.</p><p><b>The problem.</b> In addiction language, "return to use" means relapse. Someone could hear the opposite of what you mean. So avoid "Return" in the name.</p>`)}
+    ${names().map((r, i) => `<div class="row"><span class="rnum">${i + 1}</span>
+      <div class="f"><label>Name idea</label><input type="text" data-list="names" data-i="${i}" data-f="n" value="${esc(r.n)}"></div>
+      <div class="f"><div class="flabel">Which tests does it pass?</div><div class="chips">${CRIT.map((c, j) => `<button type="button" class="chip ${r.t[j] ? "on" : ""}" data-act="crit" data-i="${i}" data-j="${j}">${j + 1}. ${c}</button>`).join("")}</div></div>
+      <div class="f"><button type="button" class="tog ${A.name_final === i && r.n.trim() ? "on" : ""}" data-act="finalname" data-i="${i}">This is the one, for now</button></div></div>`).join("")}`,
+    () => [names().filter((r) => r.n.trim()).length >= 3, !!finalName()]);
+
+  add("n_promise", "name", "What it does", () => `
+    ${lbl("Part 6")}<h1>What it does, and how it helps</h1>
+    <p class="lead">Say it plainly. This goes at the top of your one-page summary.</p>
+    ${exBox(`<p><b>What it does.</b> It helps a young adult who looks fine on the outside to get ready to ask for help, and to let it in, before things become a crisis.</p><p><b>How it helps.</b> It gives them words for what is wrong, one person to tell, and one sentence to start with. It does not ask for a label or a crisis first.</p><p><b>What it is not.</b> It is not treatment. It does not replace professional care. It is about readiness, not recovery.</p><p class="small">Built from your positioning brief and the three rules. Yours to rewrite.</p>`)}
+    ${fText("n_does", "What does it do? One sentence.", "A pattern you can use: it helps (who) to (do what) before (what).", 3, true)}
+    ${fText("n_helps", "How does it help them?", "Two or three sentences. What do they have afterwards that they did not have before?", 4, true)}
+    ${fText("n_not", "What is it not?", "The honest edge. Every strong framework has one.", 3, true)}`,
+    () => [has("n_does"), has("n_helps"), has("n_not")]);
+
+  add("n_two", "name", "Two-minute explanation", () => `
+    ${lbl("Part 6")}<h1>Your two-minute explanation</h1>
+    <p class="lead">Five beats. The same five as your speaker sheet.</p>
+    <p>Your speaker sheet runs ${qt("sheet_sequence", "speaker sheet")}. There you introduce the book. Here you explain the framework.</p>
+    ${exBox(`<p><b>Beat 5 · Invitation.</b> Your speaker sheet offers one opening sentence: ${qt("opening_sentence", "speaker sheet")}</p><p>For the framework, you might add: "That sentence is the Connect stage. There are four more, and you can start with any of them."</p>`)}
+    ${BEATS.map(([b, t, h], i) => fText("n_b" + (i + 1), `${i + 1}. ${b} <span class="pg">${t}</span>`, h, 3, true)).join("")}`,
+    () => BEATS.map((_, i) => has("n_b" + (i + 1))));
+
+  add("n_way", "name", "Waypoint", () => waypoint("name", "It has a name.", "That was the last piece. Your framework is ready to read on one page.",
+    [[String(names().filter((r) => r.n.trim()).length), "names tried"], [finalName() ? "1" : "0", "chosen"]],
+    [[names().filter((r) => r.n.trim()).length >= 3, "You tried at least three names.", "n_names"], [!!finalName(), "You chose one, for now.", "n_names"],
+     [has("n_does") && has("n_helps") && has("n_not"), "You said what it does, how it helps, and what it is not.", "n_promise"], [BEATS.every((_, i) => has("n_b" + (i + 1))), "Your two-minute explanation has all five beats.", "n_two"]], "sum"), null, { way: true });
+
+  /* ===== Summit · Your framework ===== */
+  add("sum", "summary", "Your framework on one page", () => summaryHTML(), null, { way: true });
+
+  /* ===== Next leg · Test it ===== */
+  add("t_claims", "test", "Claim check", () => `
+    ${lbl("Next leg · Test it")}<h1>Claim check</h1>
+    <p class="lead">Sort what you say into what happened, what you think, what is an image, and what needs proof.</p>
+    ${why("People will ask how you know. So will anyone who might host you. Sorting your claims now protects your credibility. It also keeps your story, which no one can argue with, apart from the science, which they can.")}
+    <div class="fw">${TYPES.map(([t, d]) => `<div class="fwc">${lbl(t)}<div>${d}</div></div>`).join("")}</div>
+    <div class="card">${lbl("You already do this in the manuscript")}<div class="quote">${qt("metaphor_mechanism")}</div><div class="quote">${qt("borrow_shape")}</div></div>
+    <h2>Four lines from your manuscript</h2><p class="small">The type and suggestion are our first guess. Disagree where you see it differently.</p>
+    ${CLAIM_EX.map(([id, ty, call], i) => `<div class="row"><div class="quote">${qt(id)}</div><p class="small"><b>${ty}</b> · Our suggestion: ${call}</p><div class="f"><label>Your rewrite, if it needs one</label><input type="text" data-k="t_ex${i + 1}" value="${esc(A["t_ex" + (i + 1)] || "")}"></div></div>`).join("")}
+    <h2>Your framework's claims</h2><p class="small">Add at least two about what the method does for a person. Those are almost always untested benefits for now.</p>
+    ${claims().map((r, i) => `<div class="row"><span class="rnum">${i + 1}</span>${claims().length > 2 ? `<button type="button" class="del" data-act="delrow" data-list="claims" data-i="${i}">Remove</button>` : ""}
+      <div class="f"><label>The claim</label><input type="text" data-list="claims" data-i="${i}" data-f="s" value="${esc(r.s)}"></div>
+      <div class="f"><div class="flabel">Type</div><div class="chips">${TYPES.map(([t]) => `<button type="button" class="chip ${r.type === t ? "on" : ""}" data-act="setrow" data-list="claims" data-i="${i}" data-f="type" data-v="${t}">${t}</button>`).join("")}</div></div>
+      <div class="f"><div class="flabel">Your call</div><div class="chips">${CALLS.map((t) => `<button type="button" class="chip ${r.call === t ? "on" : ""}" data-act="setrow" data-list="claims" data-i="${i}" data-f="call" data-v="${t}">${t}</button>`).join("")}</div></div>
+      <div class="f"><label>Rewrite</label><input type="text" data-list="claims" data-i="${i}" data-f="rw" value="${esc(r.rw)}"></div></div>`).join("")}
+    <button type="button" class="add" data-act="addrow" data-list="claims">Add another claim</button>`,
+    () => { const f = claims().filter((r) => r.s.trim()); return [f.length >= 2, f.length > 0 && f.every((r) => r.type)]; });
+
+  add("t_try", "test", "Try it on someone", () => `
+    ${lbl("Next leg · Test it")}<h1>Try it on someone</h1>
+    <p class="lead">Test one exercise with three to five people and write down what actually happens.</p>
+    ${why("You can't tell if an exercise works by reading it. You find out by watching one person try it. Three to five people is enough to see where the words get in the way.")}
+    <div class="card">${lbl("A short script · start with Connect")}<ol style="padding-left:20px;margin:8px 0 0">
+      <li><b>Ask.</b> "Can I try a short exercise on you? It takes ten minutes. You don't need to share anything personal."</li>
+      <li><b>Set it up.</b> "Sam is a made-up person. Sam is 27, with a good job. Sam drinks most nights to switch off, and it is starting to cost mornings and money."</li>
+      <li><b>Run it.</b> "Pretend you are Sam. Who is one person or service Sam could tell one true thing to? Who is the backup?"</li>
+      <li><b>Get the sentence.</b> "Write the first sentence Sam could say."</li>
+      <li><b>Ask what was hard.</b> "What was unclear? What would you change?"</li></ol>
+      <p class="small" style="margin-top:8px">Then thank them. Don't explain or defend the exercise. Watch where they hesitate, what they misread, and what they skip.</p></div>
+    <div class="note"><b>No one shares personal history.</b> Use Sam, or another made-up person. If someone starts to tell you about their own life, thank them and gently bring it back to Sam. Have your support contacts ready before you begin.</div>
+    <h2>Your test log</h2><p class="small">One entry per person. Write the role only, never a name.</p>
+    ${logRows().map((r, i) => `<div class="row"><span class="rnum">${i + 1}</span>${logRows().length > 3 ? `<button type="button" class="del" data-act="delrow" data-list="log" data-i="${i}">Remove</button>` : ""}
+      <div class="grid2"><div class="f"><label>Date</label><input type="text" data-list="log" data-i="${i}" data-f="date" value="${esc(r.date)}"></div><div class="f"><label>Who, by role only</label><input type="text" data-list="log" data-i="${i}" data-f="who" value="${esc(r.who)}"></div></div>
+      <div class="f"><label>What confused them</label><input type="text" data-list="log" data-i="${i}" data-f="confused" value="${esc(r.confused)}"></div>
+      <div class="f"><label>What they produced</label><input type="text" data-list="log" data-i="${i}" data-f="produced" value="${esc(r.produced)}"></div>
+      <div class="f"><label>What to change</label><input type="text" data-list="log" data-i="${i}" data-f="change" value="${esc(r.change)}"></div></div>`).join("")}
+    <button type="button" class="add" data-act="addrow" data-list="log">Add another person</button>`,
+    () => [logRows().filter((r) => (r.who || "").trim() && ((r.confused || "").trim() || (r.produced || "").trim())).length >= 3]);
+
+  add("t_way", "test", "What happens next", () => waypoint("test", "Tested against real people.", "Send everything to Mint Mantis. We review it with you, then we try the framework in a short pilot session.",
+    [[String(claims().filter((r) => r.s.trim()).length), "claims sorted"], [String(logRows().filter((r) => (r.who || "").trim()).length), "people tried it"]],
+    [[claims().filter((r) => r.s.trim()).length >= 2, "You sorted at least two of your framework's claims.", "t_claims"], [logRows().filter((r) => (r.who || "").trim()).length >= 3, "At least three people have tried an exercise.", "t_try"]], null,
+    `<div class="note"><b>Before any session with other people.</b> Confirm local support contacts with a qualified professional. This framework is a working draft. It is not treatment, and it makes no claim yet that it works. That is what the testing is for.</div>`), null, { way: true });
+  return L;
+}
+let _cache = null;
+const allScreens = () => _cache || (_cache = screens());
+const screenById = (id) => allScreens().find((s) => s.id === id);
+
+/* ---------------- progress ---------------- */
+function scrDone(s) { if (s.way) return !!S.seen[s.id]; const r = s.req(); return r.length ? r.every(Boolean) : !!S.seen[s.id]; }
+function partStats(pid) {
+  let tot = 0, done = 0;
+  allScreens().filter((s) => s.part === pid && !s.way).forEach((s) => { const r = s.req(); if (r.length) { tot += r.length; done += r.filter(Boolean).length; } else { tot += 1; done += S.seen[s.id] ? 1 : 0; } });
+  return { tot, done, pct: tot ? done / tot : 0, complete: tot > 0 && done === tot };
+}
+function overall() { let tot = 0, done = 0; MAIN.forEach((p) => { const s = partStats(p); tot += s.tot; done += s.done; }); return { tot, done, pct: tot ? Math.round((done / tot) * 100) : 0 }; }
+
+/* ---------------- waypoint + summary ---------------- */
+function waypoint(pid, title, text, stats, checks, nextId, extra) {
+  const all = checks.every((c) => c[0]), idx = MAIN.indexOf(pid);
+  return `<div class="way">${lbl(all ? "Waypoint reached" : "Almost at the waypoint")}<h1>${all ? title : "A little more to do here."}</h1><p>${all ? text : "Finish the items below and this part is done. You can also move on and come back."}</p>
+    <div class="stats">${stats.map(([n, l]) => `<div class="stat"><b>${n}</b><span>${l}</span></div>`).join("")}</div></div>
+    <h2>${idx >= 0 ? "Ready to move on when" : "Done when"}</h2>
+    <ul class="checks">${checks.map(([ok, t, go]) => `<li class="${ok ? "ok" : ""}"><span class="ck">${ok ? "✓" : ""}</span><span>${t}</span>${ok || !go ? "" : `<button type="button" class="go" data-act="go" data-id="${go}">Finish this</button>`}</li>`).join("")}</ul>
+    ${extra || ""}
+    <div class="card">${lbl("Checkpoint")}<h3 style="margin:4px 0 6px">Send this part to Mint Mantis</h3><p class="small">Download the part as a PDF and email it to Ari. Rough is fine. We reply with questions, or a go-ahead.</p>
+      <button type="button" class="btn dark" data-act="pdf" data-kind="${pid}">Download this part (PDF)</button> <button type="button" class="btn ghost" data-act="mail" data-kind="${pid}">Open an email</button></div>`;
+}
+function summaryHTML() {
+  const miss = (t, go) => `<span class="missing">${t}</span> <button type="button" class="go" data-act="go" data-id="${go}" style="background:none;border:0;color:var(--deep);text-decoration:underline;font-size:14px">Add it</button>`;
+  const fs = finalStages(), o = overall();
+  const top = arr("m_top").filter((id) => selMoments().includes(id));
+  return `${lbl("The summit")}<h1>Your framework on one page</h1>
+  <p class="lead">${o.pct >= 100 ? "This is what you built. Every word below is yours." : `This fills in as you go. You are ${o.pct}% of the way there.`}</p>
+  <div class="onep">
+    ${lbl("The framework")}
+    <div class="nm">${finalName() ? esc(finalName()) : miss("Not named yet.", "n_names")}</div>
+    <div class="does">${has("n_does") ? esc(str("n_does")) : miss("What it does, in one sentence.", "n_promise")}</div>
+    <h3>Who it is for</h3>
+    <p>${has("aud_outside") ? `<b>From the outside:</b> ${esc(str("aud_outside"))}` : miss("The person, from the outside.", "s_who")}</p>
+    <p>${has("aud_inside") ? `<b>On the inside:</b> ${esc(str("aud_inside"))}` : miss("The person, on the inside.", "s_who")}</p>
+    <h3>Where a person starts</h3><p>${qt("entry_moment", "positioning brief")}</p>
+    <h3>The stages${A.st_shape ? " · " + ({ line: "a line", loop: "a loop", other: "its own shape" })[A.st_shape] : ""}</h3>
+    <div class="stg">${fs.map((s, n) => { const p = "sc" + s.i + "_"; return `<div class="sg"><span class="n">${n + 1}</span><b>${esc(s.name)}</b><p>${has(p + "question") ? esc(str(p + "question")) : miss("Its question.", "st_card_" + s.i)}</p><p class="small">${has(p + "leaves") ? "Leaves with: " + esc(str(p + "leaves")) : ""}</p></div>`; }).join("")}</div>
+    ${loopOn() ? `<div class="loopline"><b>${esc(stageName(5))}.</b> ${has("loop_when") ? esc(str("loop_when")) : "A loop around the method. A person can come back to any stage."}</div>` : ""}
+    <h3>How it helps</h3>
+    <p>${has("n_helps") ? esc(str("n_helps")) : miss("How it helps, in two or three sentences.", "n_promise")}</p>
+    ${fs.filter((s) => has("sc" + s.i + "_struggle") && has("sc" + s.i + "_why")).map((s) => `<p class="small"><b>${esc(s.name)}.</b> When a person is struggling with ${esc(lower(str("sc" + s.i + "_struggle")))}, this stage may help because ${esc(lower(str("sc" + s.i + "_why")))}.</p>`).join("")}
+    <h3>Where a person finishes</h3><p>${qt("success_line", "positioning brief")}</p>
+    <h3>What it is not</h3><p>${has("n_not") ? esc(str("n_not")) : miss("The honest edge.", "n_promise")}</p>
+    <h3>Built from</h3>
+    <p>${selMoments().length} moments from your own life${top.length ? ", anchored by: " + top.map((id) => esc(momentTitle(id))).join(" · ") : ""}. ${filledSent().length} sentences that keep people from asking. ${["A", "B", "C", "D"].filter((s) => has("i_" + s + "_statement")).length} big ideas.</p>
+    <p class="small">A working draft. Untested until it has been tried with real people. It is not treatment.</p>
+  </div>
+  <div class="card">${lbl("Take it with you")}<h3 style="margin:4px 0 8px">Download and send</h3>
+    <button type="button" class="btn" data-act="pdf" data-kind="summary">Download the one-pager (PDF)</button>
+    <button type="button" class="btn dark" data-act="pdf" data-kind="all">Download everything (PDF)</button>
+    <button type="button" class="btn ghost" data-act="mail" data-kind="all">Open an email</button>
+    <p class="small" style="margin-top:10px">Send both PDFs to Ari at Mint Mantis. Then take the next leg: test it.</p></div>`;
+}
+const lower = (s) => (s ? s.charAt(0).toLowerCase() + s.slice(1) : "").replace(/[.\s]+$/, "");
+
+/* ---------------- chrome: rail, top bar, side card ---------------- */
+let cur = null;
+function paintChrome() {
+  const o = overall(), C = 2 * Math.PI * 26, cs = screenById(cur);
+  const curPart = cs ? cs.part : "start";
+  document.getElementById("rail").innerHTML = `
+    <img class="logo" src="data:image/png;base64,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" alt="Mint Mantis">
+    <div class="ring"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="#224c3f" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="#2abf91" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - o.pct / 100)}" transform="rotate(-90 32 32)"/><text x="32" y="37" text-anchor="middle" class="pct">${o.pct}%</text></svg>
+      <div><b>Build your framework</b><span>${o.done} of ${o.tot} answered · ${o.tot - o.done} to go</span></div></div>
+    <ul class="trail">${PARTS.map((p) => {
+      const st = p.summit ? { complete: o.pct >= 100, done: 0, tot: 0, pct: 0 } : partStats(p.id);
+      const cls = (st.complete ? "done" : "todo") + (p.id === curPart ? " cur" : "") + (p.summit ? " summit" : "");
+      const first = allScreens().find((s) => s.part === p.id);
+      return `<li class="${cls}"><span class="node">${st.complete ? "✓" : ""}</span>
+        <button type="button" class="pbtn" data-act="go" data-id="${first.id}"><span class="pn">${p.name}</span>
+        ${p.summit ? `<span class="pc">${o.pct >= 100 ? "Ready to read" : "Fills in as you go"}</span>` : `<span class="pc">${p.bonus ? "Next leg · " : ""}${st.done} of ${st.tot}${st.complete ? " · done" : ""}</span><div class="pbar"><i style="width:${Math.round(st.pct * 100)}%"></i></div>`}</button>
+        ${p.id === curPart && !p.summit ? `<ul class="sub">${allScreens().filter((s) => s.part === p.id).map((s) => `<li><button type="button" class="${s.id === cur ? "on" : ""} ${scrDone(s) ? "ok" : ""}" data-act="go" data-id="${s.id}"><span class="dot"></span><span>${esc(s.nav)}</span></button></li>`).join("")}</ul>` : ""}</li>`;
+    }).join("")}</ul>
+    <div class="railfoot"><div class="saved ${storageOK ? "" : "warn"}">${storageOK ? (savedAt ? "Saved " + savedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "Saves as you type") : "Saving is blocked in this browser. Download a backup before you close."}</div>
+      <button type="button" data-act="backup">Download a backup</button><button type="button" data-act="restore">Restore</button></div>`;
+  const pi = PARTS.findIndex((p) => p.id === curPart), mi = MAIN.indexOf(curPart);
+  document.getElementById("where").innerHTML = `<span class="lbl">${mi >= 0 ? "Part " + (mi + 1) + " of 6" : PARTS[pi].summit ? "The summit" : "Next leg"} · ${PARTS[pi].name}</span>`;
+  document.getElementById("tbar").style.width = o.pct + "%";
+  document.getElementById("tpct").textContent = o.pct + "%";
+  const fs = finalStages(), chosen = SR.some((_, i) => A["st_call" + i]);
+  document.getElementById("side").innerHTML = `<h2>Your framework so far</h2><div class="sf">
+    ${lbl("Name")}<div class="nm ${finalName() ? "" : "empty"}">${finalName() ? esc(finalName()) : "Not named yet"}</div>
+    <div class="blk">${lbl("For")}<p class="${has("aud_outside") ? "" : "empty"}">${has("aud_outside") ? esc(clip(str("aud_outside"), 110)) : "Young adults who look fine from the outside."}</p></div>
+    <div class="blk">${lbl("Stages")}<div class="schips">${fs.map((s, n) => `<div class="schip ${chosen ? "" : "ghost"}"><i>${n + 1}</i>${esc(s.name)}</div>`).join("")}${loopOn() ? `<div class="schip ghost"><i>&#8635;</i>${esc(stageName(5))}</div>` : ""}</div>${chosen ? "" : `<p class="empty">Suggested for now. You decide in Part 5.</p>`}</div>
+    <div class="blk">${lbl("What it does")}<p class="${has("n_does") ? "" : "empty"}">${has("n_does") ? esc(clip(str("n_does"), 150)) : "You write this in Part 6."}</p></div>
+    <div class="blk">${lbl("Built from")}<div class="built"><div><b>${selMoments().length}</b><span>moments</span></div><div><b>${filledSent().length}</b><span>sentences</span></div><div><b>${["A", "B", "C", "D"].filter((s) => has("i_" + s + "_statement")).length}</b><span>ideas</span></div></div></div>
+  </div><p class="small" style="margin-top:12px">This card fills in as you answer. The full page is at the summit.</p>`;
+}
+const clip = (s, n) => (s.length > n ? s.slice(0, n).trim() + "..." : s);
+
+/* ---------------- render + navigation ---------------- */
+function render() {
+  _cache = null;
+  let s = screenById(cur); if (!s) { cur = allScreens()[0].id; s = screenById(cur); }
+  const L = allScreens(), i = L.indexOf(s), prev = L[i - 1], next = L[i + 1];
+  const o = overall();
+  const back = cur === "s_welcome" && o.done > 0 && S.last && S.last !== "s_welcome" && screenById(S.last)
+    ? `<div class="note" style="margin-bottom:18px"><b>Welcome back.</b> You are ${o.pct}% of the way. <button type="button" class="go" data-act="go" data-id="${S.last}" style="background:none;border:0;color:var(--deep);text-decoration:underline;font:inherit">Carry on where you left off</button></div>` : "";
+  document.getElementById("screen").innerHTML = back + s.render() + `<div class="nav">${prev ? `<button type="button" class="btn ghost" data-act="go" data-id="${prev.id}">Back</button>` : ""}<span class="left">${!s.way && s.req().length ? s.req().filter(Boolean).length + " of " + s.req().length + " needed answers on this screen" : ""}</span>${next ? `<button type="button" class="btn" data-act="go" data-id="${next.id}">${cur === "s_welcome" ? "Begin" : "Continue"}</button>` : ""}</div>`;
+  S.seen[cur] = true; if (cur !== "s_welcome") S.last = cur; S.cur = cur;
+  paintChrome(); save();
+}
+function go(id) { cur = id; closeDrawers(); render(); window.scrollTo(0, 0); const m = document.querySelector(".main"); if (m) m.scrollTop = 0; }
+function closeDrawers() { ["rail", "side", "scrim"].forEach((id) => document.getElementById(id).classList.remove("open")); }
+function softRefresh() { _cache = null; paintChrome(); const s = screenById(cur), left = document.querySelector(".nav .left"); if (s && left && !s.way && s.req().length) left.textContent = s.req().filter(Boolean).length + " of " + s.req().length + " needed answers on this screen"; }
+
+/* ---------------- events ---------------- */
+document.addEventListener("input", (e) => {
+  const t = e.target;
+  if (t.dataset.k) { A[t.dataset.k] = t.value; }
+  else if (t.dataset.list) { A[t.dataset.list][+t.dataset.i][t.dataset.f] = t.value; }
+  else if (t.dataset.acts) { acts(+t.dataset.acts)[+t.dataset.n] = t.value; }
+  else if (t.dataset.custom !== undefined) { custom()[+t.dataset.custom].title = t.value; }
+  else return;
+  save(); softRefresh();
+});
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-chip],[data-act]"); if (!t) return;
+  const d = t.dataset;
+  if (d.chip) {
+    if (d.chip === "m") { const a = arr(d.k).slice(), i = a.indexOf(d.v); if (i >= 0) a.splice(i, 1); else { if (d.max && a.length >= +d.max) a.shift(); a.push(d.v); } A[d.k] = a; }
+    else A[d.k] = A[d.k] === d.v ? "" : d.v;
+    save(); return render();
+  }
+  switch (d.act) {
+    case "go": return go(d.id);
+    case "rule": A["rule" + d.i] = !A["rule" + d.i]; break;
+    case "addcustom": custom().push({ id: "u" + Date.now().toString(36), title: "" }); break;
+    case "addrow": ({ sentences, claims, log: logRows })[d.list](); A[d.list].push(d.list === "sentences" ? { s: "", barriers: [], young: false, how: "" } : d.list === "claims" ? { s: "", type: "", call: "", rw: "" } : { date: "", who: "", ex: "Connect", confused: "", produced: "", change: "" }); break;
+    case "delrow": A[d.list].splice(+d.i, 1); break;
+    case "setrow": A[d.list][+d.i][d.f] = A[d.list][+d.i][d.f] === d.v ? "" : d.v; break;
+    case "barrier": { const r = sentences()[+d.i]; r.barriers = r.barriers || []; const i = r.barriers.indexOf(d.v); if (i >= 0) r.barriers.splice(i, 1); else r.barriers.push(d.v); break; }
+    case "young": sentences()[+d.i].young = !sentences()[+d.i].young; break;
+    case "research": A[d.k] = str(d.k) === "to research" ? "" : "to research"; break;
+    case "call": A["st_call" + d.i] = d.v; break;
+    case "shape": A.st_shape = d.v; break;
+    case "crit": names()[+d.i].t[+d.j] = names()[+d.i].t[+d.j] ? 0 : 1; break;
+    case "finalname": A.name_final = A.name_final === +d.i ? null : +d.i; break;
+    case "pdf": return makePDF(d.kind);
+    case "mail": return void (location.href = "mailto:?subject=" + encodeURIComponent("My framework · " + (d.kind === "all" ? "everything" : (PARTS.find((p) => p.id === d.kind) || {}).name || "")) + "&body=" + encodeURIComponent("Hi Ari,\n\nAttached is my work from the framework builder.\n\nChris"));
+    case "backup": return backup();
+    case "restore": return document.getElementById("restorefile").click();
+    case "openrail": document.getElementById("rail").classList.add("open"); document.getElementById("scrim").classList.add("open"); return;
+    case "openside": document.getElementById("side").classList.add("open"); document.getElementById("scrim").classList.add("open"); return;
+    case "closedrawers": return closeDrawers();
+    default: return;
+  }
+  save(); render();
+});
+document.getElementById("restorefile").addEventListener("change", (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { try { const d = JSON.parse(r.result); if (d && d.a) { Object.keys(A).forEach((k) => delete A[k]); Object.assign(A, d.a); S.seen = d.seen || {}; S.last = d.last || null; save(); go("s_welcome"); } } catch (err) { alert("That file could not be read. Choose a backup made by this page."); } };
+  r.readAsText(f); e.target.value = "";
+});
+
+/* ---------------- export ---------------- */
+function sections(kind) {
+  const out = [], P = (title) => { const s = { title, items: [] }; out.push(s); return s.items; };
+  const want = (p) => kind === "all" || kind === p;
+  if (want("start")) { const it = P("Start here"); it.push(["From the outside, this person looks like", str("aud_outside")], ["On the inside, what is true", str("aud_inside")], ["What I would want this person to hear", str("aud_person")], ["What my framework should have", arr("fw_elements").join(" · ")], ["A framework I admire", str("fw_admire")]); }
+  if (want("moments")) { selMoments().forEach((id, n) => { const it = P("Moment " + (n + 1) + " · " + momentTitle(id) + (momentPage(id) ? " (" + momentPage(id) + ")" : "")); MF.forEach(([k, t]) => it.push([t, str("m_" + id + "_" + k)])); }); const it = P("My strongest moments"); it.push(["Strongest three", arr("m_top").map(momentTitle).join(" · ")], ["What they have in common", str("m_pattern")]); }
+  if (want("before")) { const it = P("Before asking · My sentences"); filledSent().forEach((r, n) => it.push(["Sentence " + (n + 1), r.s + "\nBarrier: " + ((r.barriers || []).join(", ") || "not chosen") + "\nA young adult would say it: " + (r.young ? "yes" : "no") + (r.how ? "\nHow they might say it: " + r.how : "")])); it.push(["The one I wish someone had questioned", str("b_one")], ["What might have happened", str("b_one_why")]); }
+  if (want("ideas")) { [...SHEETS, { id: "D", title: str("i_D_title") || "Spare idea" }].forEach((sh) => { if (sh.id === "D" && !PS.some(([k]) => has("i_D_" + k))) return; const it = P("Idea " + sh.id + " · " + sh.title); PS.forEach(([k, t]) => it.push([t, str("i_" + sh.id + "_" + k)])); }); }
+  if (want("stages")) { let it = P("My stages · Choices"); SR.forEach(([o, v], i) => it.push([o + " > " + v, (A["st_call" + i] || "no choice yet") + (A["st_call" + i] === "rename" ? ": " + str("st_name" + i) : "") + (has("st_why" + i) ? "\nWhy: " + str("st_why" + i) : "")])); it.push(["Shape", A.st_shape || ""], ["Where a person enters", str("st_enter")], ["Can they skip a stage", str("st_skip")], ["What brings them back", str("st_back")], ["The shape, described", str("st_shape_note")]);
+    finalStages().forEach((s, n) => { const p = "sc" + s.i + "_"; it = P("Stage " + (n + 1) + " · " + s.name); it.push(["The person is struggling with", str(p + "struggle")], ["The question", str(p + "question")], ["The practice", acts(s.i).filter((v) => (v || "").trim()).map((v, m) => (m + 1) + ". " + v).join("\n")], ["This may help because", str(p + "why")], ["Scene from my story", [momentTitle(A[p + "moment"] || ""), str(p + "scene")].filter(Boolean).join("\n")], ["What the person leaves with", str(p + "leaves")], ["A made-up young adult doing it", str(p + "example")], ["Watch out for, and its limits", str(p + "watch")]); });
+    if (loopOn()) { it = P("The loop · " + stageName(5)); it.push(["When a person might come back", str("loop_when")], ["What stays optional", str("loop_optional")], ["What I would say to someone who comes back", str("loop_sentence")]); } }
+  if (want("name")) { let it = P("Name it"); names().filter((r) => r.n.trim()).forEach((r, n) => it.push(["Name idea " + (n + 1) + (A.name_final === names().indexOf(r) ? " (chosen)" : ""), r.n + "\nPasses: " + (CRIT.filter((_, j) => r.t[j]).join(", ") || "none ticked")])); it.push(["What it does", str("n_does")], ["How it helps", str("n_helps")], ["What it is not", str("n_not")]); it = P("Two-minute explanation"); BEATS.forEach(([b, t], i) => it.push([b + " (" + t + ")", str("n_b" + (i + 1))])); }
+  if (want("test")) { let it = P("Claim check"); CLAIM_EX.forEach(([id], i) => it.push(['"' + Q[id].text + '" (p. ' + Q[id].page + ")", str("t_ex" + (i + 1))])); claims().filter((r) => r.s.trim()).forEach((r, n) => it.push(["Claim " + (n + 1), r.s + "\nType: " + (r.type || "not chosen") + " · Call: " + (r.call || "not chosen") + (r.rw ? "\nRewrite: " + r.rw : "")])); it = P("Test log"); logRows().filter((r) => (r.who || "").trim()).forEach((r, n) => it.push(["Person " + (n + 1) + " · " + r.who + (r.date ? " · " + r.date : ""), "Confused by: " + r.confused + "\nProduced: " + r.produced + "\nTo change: " + r.change])); }
+  return out;
+}
+function summarySections() {
+  const fs = finalStages(), out = [];
+  out.push({ title: finalName() || "Unnamed framework", items: [["What it does", str("n_does")], ["Who it is for · from the outside", str("aud_outside")], ["Who it is for · on the inside", str("aud_inside")], ["Where a person starts", '"' + Q.entry_moment.text + '"']] });
+  out.push({ title: "The stages", items: fs.map((s, n) => [(n + 1) + ". " + s.name, [str("sc" + s.i + "_question"), has("sc" + s.i + "_leaves") ? "Leaves with: " + str("sc" + s.i + "_leaves") : ""].filter(Boolean).join("\n")]).concat(loopOn() ? [[stageName(5) + " (the loop)", str("loop_when") || "A person can come back to any stage."]] : []) });
+  out.push({ title: "How it helps", items: [["In my words", str("n_helps")]].concat(fs.filter((s) => has("sc" + s.i + "_struggle") && has("sc" + s.i + "_why")).map((s) => [s.name, "When a person is struggling with " + lower(str("sc" + s.i + "_struggle")) + ", this stage may help because " + lower(str("sc" + s.i + "_why")) + "."])) });
+  out.push({ title: "The edges", items: [["Where a person finishes", '"' + Q.success_line.text + '"'], ["What it is not", str("n_not")], ["Built from", selMoments().length + " moments, " + filledSent().length + " sentences, " + ["A", "B", "C", "D"].filter((s) => has("i_" + s + "_statement")).length + " big ideas."], ["Status", "A working draft. Untested until it has been tried with real people. It is not treatment."]] });
+  return out;
+}
+const pdfSafe = (s) => String(s).replace(/›/g, ">").replace(/[✓✔]/g, "x").replace(/[^\x20-\xFF\n‘’“”…]/g, "");
+function makePDF(kind) {
+  if (!(window.jspdf && window.jspdf.jsPDF)) { alert("The PDF tool did not load. Check your connection and reload the page. Your answers are safe."); return; }
+  const doc = new window.jspdf.jsPDF({ unit: "pt", format: "a4" }), L = 56, W = 483, B = 780; let y = 64;
+  const room = (n) => { if (y + n > B) { doc.addPage(); y = 64; } };
+  const put = (text, size, style, color, gap) => { doc.setFont("helvetica", style); doc.setFontSize(size); doc.setTextColor(color); doc.splitTextToSize(pdfSafe(text), W).forEach((ln) => { room(size * 1.38); doc.text(ln, L, y); y += size * 1.38; }); y += gap; };
+  const secs = kind === "summary" ? summarySections() : sections(kind);
+  const label = kind === "summary" ? "One-page summary" : kind === "all" ? "Everything so far" : (PARTS.find((p) => p.id === kind) || {}).name;
+  put("Build Your Framework · Chris", 9, "bold", "#2d6655", 2);
+  put(kind === "summary" ? (finalName() || "My framework") : label, 18, "bold", "#0e1f19", 4);
+  put(new Date().toLocaleDateString() + " · " + overall().pct + "% complete · prepared with Mint Mantis", 9, "normal", "#666666", 14);
+  secs.forEach((s) => { room(50); put(s.title, 12.5, "bold", "#0e1f19", 6); s.items.forEach(([l, v]) => { room(34); put(l, 9.5, "bold", "#2d6655", 1); put(v && String(v).trim() ? v : "(not answered yet)", 10.5, v && String(v).trim() ? "normal" : "italic", v && String(v).trim() ? "#1a1a1a" : "#999999", 9); }); y += 8; });
+  doc.save("Chris-Framework-" + (kind === "summary" ? "One-Pager" : kind === "all" ? "Everything" : label.replace(/\s+/g, "-")) + ".pdf");
+}
+function backup() {
+  const blob = new Blob([JSON.stringify({ a: A, seen: S.seen, last: S.last, at: new Date().toISOString() })], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "chris-framework-backup.json"; document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ---------------- boot ---------------- */
+window.__app = { A, S, go, allScreens, overall, partStats, finalStages, sections, summarySections };
+cur = "s_welcome";
+render();
+</script>
+</body>
+</html>
